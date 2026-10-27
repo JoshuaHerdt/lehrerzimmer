@@ -5,11 +5,15 @@ const V="10.12.2",B=window.FB_BASE||`https://www.gstatic.com/firebasejs/${V}/`;
 async function boot(){
   const cfg=window.FIREBASE_CONFIG;
   if(!cfg||!cfg.apiKey||!cfg.databaseURL) return null;
-  const [{initializeApp},{getAuth,signInAnonymously,onAuthStateChanged},D]=await Promise.all([
+  const [{initializeApp},A,D]=await Promise.all([
     import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-database.js")]);
   const {getDatabase,ref,get,set,update,remove,onValue,runTransaction,onDisconnect}=D;
+  const {getAuth,signInAnonymously,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,EmailAuthProvider,linkWithCredential}=A;
   const app=initializeApp(cfg),auth=getAuth(app),dbi=getDatabase(app);
-  const uid=await new Promise((res,rej)=>{const off=onAuthStateChanged(auth,u=>{if(u){off();res(u.uid);}});signInAnonymously(auth).catch(rej);});
+  // Bestehende Sitzung (Konto oder Gast) übernehmen, sonst als Gast anonym anmelden
+  let cur=await new Promise(res=>{const off=onAuthStateChanged(auth,u=>{off();res(u);});});
+  if(!cur) cur=(await signInAnonymously(auth)).user;
+  const uid=cur.uid;
   const mp=p=>p.startsWith("data/users/")?"users/"+p.slice(11):p;
   const clean=d=>JSON.parse(JSON.stringify(d,(k,v)=>v===undefined?null:v));
   const snap=(s,id)=>({id,exists:s.exists(),data:()=>s.val()??undefined,metadata:{fromCache:false,hasPendingWrites:false}});
@@ -45,11 +49,34 @@ async function boot(){
   };
   const LSN="lz-site-name";
   const myName=()=>{try{return localStorage.getItem(LSN)||""}catch(e){return ""}};
+  if(!cur.isAnonymous&&!myName()){try{const n=(await get(ref(dbi,"names/"+uid))).val();if(n)localStorage.setItem(LSN,n);}catch(e){}}
   if(myName()) set(ref(dbi,"names/"+uid),myName().slice(0,24)).catch(()=>{});
   const user={
     id:async()=>uid,name:async()=>myName()||"Spieler "+uid.slice(0,4).toUpperCase(),
     me:async()=>({id:uid,name:myName()}),isOwner:async()=>false,canEdit:async()=>true,can:async()=>true,
     profiles:async ids=>{const out={};await Promise.all(ids.map(async id=>{let n="";try{n=(await get(ref(dbi,"names/"+id))).val()||"";}catch(e){}out[id]={id,name:n||"Spieler "+String(id).slice(0,4).toUpperCase(),isMe:id===uid};}));return out;}
+  };
+  // Konten: Name + Passwort (intern als Kunst-E-Mail, es wird nie eine E-Mail verschickt)
+  const norm=n=>String(n||"").trim().toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss").replace(/[^a-z0-9._-]/g,"");
+  const mail=n=>norm(n)+"@spieler.lehrerzimmer-arena.app";
+  const errText=e=>{const c=e&&e.code||"";
+    if(/email-already-in-use/.test(c))return "Dieser Name ist schon vergeben.";
+    if(/weak-password/.test(c))return "Das Passwort braucht mindestens 6 Zeichen.";
+    if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c))return "Name oder Passwort stimmt nicht.";
+    if(/too-many-requests/.test(c))return "Zu viele Versuche. Warte kurz und versuch es noch einmal.";
+    if(/network/.test(c))return "Keine Internetverbindung.";
+    return "Das hat nicht geklappt ("+c+").";};
+  const checkName=n=>{const t=String(n||"").trim();if(norm(t).length<3)return "Der Name braucht mindestens 3 Buchstaben oder Ziffern.";if(t.length>20)return "Der Name darf höchstens 20 Zeichen haben.";return "";};
+  window.LZ_SITE.auth={
+    info:{uid,account:!cur.isAnonymous,name:myName()},
+    async register(name,pass){const bad=checkName(name);if(bad)return {error:bad};
+      try{const cred=EmailAuthProvider.credential(mail(name),pass);await linkWithCredential(auth.currentUser,cred);
+        await set(ref(dbi,"names/"+uid),String(name).trim().slice(0,24));try{localStorage.setItem(LSN,String(name).trim().slice(0,24));}catch(e){}
+        return {ok:true};}catch(e){return {error:errText(e)};}},
+    async login(name,pass){if(!norm(name))return {error:"Gib deinen Namen ein."};
+      try{const r=await signInWithEmailAndPassword(auth,mail(name),pass);let n="";try{n=(await get(ref(dbi,"names/"+r.user.uid))).val()||"";}catch(e){}
+        try{localStorage.setItem(LSN,n||String(name).trim());}catch(e){}return {ok:true};}catch(e){return {error:errText(e)};}},
+    async logout(){try{localStorage.removeItem(LSN);}catch(e){}await signOut(auth);return {ok:true};}
   };
   window.LZ_SITE.setName=async n=>{n=String(n||"").replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,24);try{localStorage.setItem(LSN,n);}catch(e){}await set(ref(dbi,"names/"+uid),n||null).catch(()=>{});return n;};
   return {db,room,user};

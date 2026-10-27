@@ -7,6 +7,8 @@ Das Sammelkartenspiel der FOS Holzkirchen – spielbar im Browser, gegen den Com
 - Hauptmenü mit Start, Spielen, Decks, Packs, Album und Regeln
 - 4 Zweige der FOS als Fraktionen, Ideen aus Gwent, 3D-Klassenzimmer aus Blender
 - Online-Partien über Firebase Realtime Database (kostenloser Spark-Tarif)
+- Konten mit Name und Passwort (Firebase Authentication); neue Spieler wählen einen Zweig und bekommen nur dessen Startdeck, alles andere aus Packs
+- Bedienung: Karten antippen öffnet das Aktions-Dock; Energie und Handkarten lassen sich auch aufs Feld ziehen
 
 ## Online-Modus einrichten (einmalig)
 1. https://console.firebase.google.com → Projekt hinzufügen (Google Analytics nicht nötig).
