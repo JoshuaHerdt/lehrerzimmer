@@ -1877,14 +1877,14 @@ const Menu=(()=>{
 
 /* ---------- Online: Lobby (db), Live-Kanal (room), Züge im Gleichschritt ---------- */
 const Online=(()=>{
-  let db=null,room=null,user=null,myId=null,myNameStr="",ready=false,lobby=[],peers=0,names={},waiting=null,msg="",busy=false;
+  let db=null,room=null,user=null,myId=null,myNameStr="",ready=false,lobby=[],peers=0,here=null,names={},waiting=null,msg="",busy=false;
   const T_OPEN=30*60*1000;
   async function init(){
     try{[db,room,user]=await Promise.all([claude.use("db"),claude.use("room"),claude.use("user")]);}catch(e){}
     if(user){try{myId=await user.id();myNameStr=await user.name();}catch(e){}}
     if(window.LZ_SITE&&myId){try{const n=localStorage.getItem("lz-site-name");if(n)myNameStr=n;}catch(e){}}
     ready=!!(db&&myId);
-    if(room){try{room.presence({s:"menu"});room.onPeers(c=>{peers=c.peers.filter(p=>p.kind==="viewer").length;Menu.refreshOnline();},()=>{});}catch(e){}}
+    if(room){try{room.presence({s:"menu"});room.onPeers(c=>{const v=c.peers.filter(p=>p.kind==="viewer");peers=v.length;if(window.LZ_SITE)here=new Set(v.map(p=>p.by));Menu.refreshOnline();},()=>{});}catch(e){}}
     if(ready){
       db.collection("lobby").onSnapshot(s=>{lobby=s.docs.map(d=>Object.assign({id:d.id},d.data()));resolveNames();check();Menu.refreshOnline();},()=>{ready=false;Menu.refreshOnline();});
     }
@@ -1895,7 +1895,8 @@ const Online=(()=>{
     if(!ids.length) return;try{const ps=await user.profiles(ids);ids.forEach(id=>names[id]=(ps[id]&&ps[id].name)||"Mitspieler");Menu.refreshOnline();}catch(e){}
   }
   const nameOf=id=>id===myId?(myNameStr||"Du"):(names[id]||"Mitspieler");
-  const open=()=>lobby.filter(l=>l.st==="open"&&Date.now()-(l.t||0)<T_OPEN);
+  // Auf der Webseite zählen fremde Herausforderungen nur, solange der Ersteller noch online ist
+  const open=()=>lobby.filter(l=>l.st==="open"&&Date.now()-(l.t||0)<T_OPEN&&(!here||l.host===myId||here.has(l.host)));
   function status(){return !ready?"nicht verfügbar":`${peers||1} online · ${open().filter(l=>l.host!==myId).length} offene Herausforderungen`;}
   function panelHTML(deckBad){
     if(!ready&&window.LZ_SITE) return `<h2>Online</h2><p class="lead">${window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey?"Keine Verbindung zum Spielserver. Prüfe dein Internet und lade die Seite neu.":"Der Online-Modus wird gerade eingerichtet. Gegen den Computer kannst du schon spielen."}</p>`;

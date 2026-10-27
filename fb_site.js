@@ -7,7 +7,7 @@ async function boot(){
   if(!cfg||!cfg.apiKey||!cfg.databaseURL) return null;
   const [{initializeApp},A,D]=await Promise.all([
     import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-database.js")]);
-  const {getDatabase,ref,get,set,update,remove,onValue,runTransaction,onDisconnect}=D;
+  const {getDatabase,ref,get,set,update,remove,onValue,runTransaction,onDisconnect,serverTimestamp,goOffline,goOnline}=D;
   const {getAuth,signInAnonymously,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,EmailAuthProvider,linkWithCredential}=A;
   const app=initializeApp(cfg),auth=getAuth(app),dbi=getDatabase(app);
   // Bestehende Sitzung (Konto oder Gast) übernehmen, sonst als Gast anonym anmelden
@@ -34,9 +34,29 @@ async function boot(){
       get:async()=>qs(docsOf(await get(r))),
       onSnapshot:(next,err)=>onValue(r,s=>next(qs(docsOf(s))),e=>err&&err({code:"unavailable",message:String(e)}))};}
   const db={doc:docRef,collection:collRef};
-  // Wer ist da: online/<uid> bzw. rooms/<name>/<uid>, beim Verlassen automatisch entfernt
-  function peersAt(path,cb,err){return onValue(ref(dbi,path),s=>{const v=s.val()||{};const peers=Object.keys(v).map(k=>({peer:k,by:k,isMe:k===uid,sameTab:k===uid,kind:"viewer",guest:false,presence:v[k]||{},updatedAt:Date.now()}));cb({peers,joined:[],left:[],updated:[]});},e=>err&&err({code:"upstream_error",message:String(e)}));}
-  async function presenceAt(path,p){const r=ref(dbi,path);await onDisconnect(r).remove();await set(r,clean(Object.assign({t:Date.now()},p)));}
+  // Wer ist da: online/<uid> bzw. rooms/<name>/<uid>. Jeder Eintrag trägt eine Serverzeit und wird jede Minute erneuert,
+  // solange die Seite sichtbar ist. Wer länger als 2,5 Minuten nichts erneuert hat, zählt nicht mehr als da.
+  // Beim Schließen, Anmelden und Abmelden wird der eigene Eintrag sofort gelöscht: Firebase prüft den
+  // onDisconnect-Auftrag mit der Anmeldung zum Zeitpunkt des Trennens, nach einem Kontowechsel würde er abgelehnt.
+  const STALE=150e3,pres=new Map();let skew=0;
+  onValue(ref(dbi,".info/serverTimeOffset"),s=>{skew=s.val()||0;});
+  const visible=()=>typeof document==="undefined"||document.visibilityState!=="hidden";
+  async function writePres(path){const r=ref(dbi,path);await onDisconnect(r).remove();await set(r,clean(Object.assign({},pres.get(path),{t:serverTimestamp()})));}
+  async function dropPres(path){const r=ref(dbi,path);try{await onDisconnect(r).cancel();}catch(e){}try{await remove(r);}catch(e){}}
+  const dropAll=()=>Promise.all([...pres.keys()].map(dropPres));
+  const refreshAll=()=>{if(visible())pres.forEach((p,path)=>writePres(path).catch(()=>{}));};
+  setInterval(refreshAll,60e3);
+  onValue(ref(dbi,".info/connected"),s=>{if(s.val())refreshAll();});
+  document.addEventListener("visibilitychange",()=>{if(visible())refreshAll();});
+  // Beim Verlassen die Verbindung sauber schließen, dann führt der Server die onDisconnect-Löschung sofort aus
+  addEventListener("pagehide",()=>{try{goOffline(dbi);}catch(e){}});
+  addEventListener("pageshow",e=>{if(e.persisted){goOnline(dbi);refreshAll();}});
+  const fresh=(k,v)=>k===uid||(v&&typeof v.t==="number"&&Date.now()+skew-v.t<STALE);
+  function peersAt(path,cb,err){let last=null;const emit=()=>{const v=last||{};const peers=Object.keys(v).filter(k=>fresh(k,v[k])).map(k=>({peer:k,by:k,isMe:k===uid,sameTab:k===uid,kind:"viewer",guest:false,presence:v[k]||{},updatedAt:Date.now()}));cb({peers,joined:[],left:[],updated:[]});};
+    const tick=setInterval(()=>{if(last)emit();},30e3);
+    const off=onValue(ref(dbi,path),s=>{last=s.val()||{};emit();},e=>err&&err({code:"upstream_error",message:String(e)}));
+    return ()=>{clearInterval(tick);off();};}
+  async function presenceAt(path,p){pres.set(path,p);if(visible())await writePres(path);}
   const room={
     presence:p=>presenceAt("online/"+uid,p),
     onPeers:(cb,err)=>peersAt("online",cb,err),
@@ -45,7 +65,7 @@ async function boot(){
     join:async name=>({name,emit:async()=>{},on:()=>()=>{},
       presence:p=>presenceAt(`rooms/${name}/${uid}`,p),
       onPeers:(cb,err)=>peersAt(`rooms/${name}`,cb,err),
-      connected:()=>true,leave:()=>remove(ref(dbi,`rooms/${name}/${uid}`))})
+      connected:()=>true,leave:()=>{const path=`rooms/${name}/${uid}`;pres.delete(path);return dropPres(path);}})
   };
   const LSN="lz-site-name";
   const myName=()=>{try{return localStorage.getItem(LSN)||""}catch(e){return ""}};
@@ -74,9 +94,10 @@ async function boot(){
         await set(ref(dbi,"names/"+uid),String(name).trim().slice(0,24));try{localStorage.setItem(LSN,String(name).trim().slice(0,24));}catch(e){}
         return {ok:true};}catch(e){return {error:errText(e)};}},
     async login(name,pass){if(!norm(name))return {error:"Gib deinen Namen ein."};
+      await dropAll();
       try{const r=await signInWithEmailAndPassword(auth,mail(name),pass);let n="";try{n=(await get(ref(dbi,"names/"+r.user.uid))).val()||"";}catch(e){}
-        try{localStorage.setItem(LSN,n||String(name).trim());}catch(e){}return {ok:true};}catch(e){return {error:errText(e)};}},
-    async logout(){try{localStorage.removeItem(LSN);}catch(e){}await signOut(auth);return {ok:true};}
+        try{localStorage.setItem(LSN,n||String(name).trim());}catch(e){}return {ok:true};}catch(e){refreshAll();return {error:errText(e)};}},
+    async logout(){try{localStorage.removeItem(LSN);}catch(e){}await dropAll();await signOut(auth);return {ok:true};}
   };
   window.LZ_SITE.setName=async n=>{n=String(n||"").replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,24);try{localStorage.setItem(LSN,n);}catch(e){}await set(ref(dbi,"names/"+uid),n||null).catch(()=>{});return n;};
   return {db,room,user};
