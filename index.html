@@ -188,6 +188,8 @@ body{margin:0;background:var(--night);color:var(--ink);font-family:var(--f-body)
 .mopts{display:flex;flex-wrap:wrap;gap:calc(var(--u)*10);justify-content:center}
 .mopt{border:0;padding:0;background:none;cursor:pointer;border-radius:12px;position:relative}
 .mopt:hover .card,.mopt:focus-visible .card{outline:4px solid var(--gold);outline-offset:2px}
+.mview .mopt{cursor:default}.mview .mopt:hover .card{outline:none}
+.mview .mrow{gap:10px;flex-wrap:wrap;justify-content:center}.mview .mrow .btn{min-width:180px;min-height:48px;font-size:16px}
 .mopt .st{position:absolute;left:50%;bottom:-2px;transform:translate(-50%,50%);background:var(--ink);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
 .mrow{display:flex;gap:calc(var(--u)*8);justify-content:center;margin-top:calc(var(--u)*16);flex-wrap:wrap}
 .btn.pri{background:var(--pen);color:#fff}
@@ -695,7 +697,7 @@ const RULES={
   attachPerTurn:1, firstTurnAttack:false, startEnergy:0, firstAttachBenchOnly:false,
   benchMax:3, benchPerTurn:1, startHand:4, recycleSupports:true, winPoints:15, koPoints:5, deckTeachers:10, deckSupports:5, maxSupportCopies:2, supportsPerTurn:1, supportFromTurn:2,
   weakBonus:10, maxDmg:50, maxTurns:90, examTurn:40, examBonus:20,
-  zweigMin:5, perks:true, jokers:true, jokerFromTurn:2, redraw:2, scorchDmg:20, healPerk:10, techMax:2, jokerHeal:20, spyDraw:3, medicEnergy:2
+  zweigMin:5, perks:true, jokers:true, jokerFromTurn:2, redraw:1, scorchDmg:20, healPerk:10, techMax:2, jokerHeal:20, spyDraw:3, medicEnergy:2
 };
 
 const TEMPLATES={"integral": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50, "fx": [{"t": "noRetreat"}]}]}, "voltmann": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "attachBench", "n": 1}]}, {"cost": 2, "dmg": 50}]}, "kolbe": {"hp": 70, "retreat": 2, "legend": false, "passiveKey": "armor10", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "fx": [{"t": "benchSplash", "n": 10}]}]}, "byte": {"hp": 70, "retreat": 0, "legend": false, "passiveKey": "backup", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healSelf", "n": 20}]}, {"cost": 2, "dmg": 50}]}, "komma": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "perOppEnergy", "n": 10}]}]}, "smalltalk": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "fx": [{"t": "draw", "n": 1}]}]}, "baguette": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healOne", "n": 30}]}, {"cost": 2, "dmg": 50, "fx": [{"t": "forceSwitch"}]}]}, "cicero": {"hp": 70, "retreat": 3, "legend": false, "passiveKey": "regen10", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "chronos": {"hp": 90, "retreat": 2, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "perKO", "n": 10}]}]}, "debatte": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 0, "fx": [{"t": "attachAny", "n": 2}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "gust"}]}]}, "atlas": {"hp": 80, "retreat": 2, "legend": false, "passiveKey": "onPlayAny", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "gnade": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": "comfort", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healAll", "n": 10}]}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "hpCompare", "n": 10}]}]}, "pfiff": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": "coach", "atks": [{"cost": 1, "dmg": 10, "fx": [{"t": "attachSelf", "n": 1}]}, {"cost": 2, "dmg": 50}]}, "zirkel": {"hp": 80, "retreat": 0, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50, "fx": [{"t": "freeSwitch"}]}]}, "voelker": {"hp": 80, "retreat": 2, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "snipe"}]}, {"cost": 2, "dmg": 50}]}, "urkunde": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30, "fx": [{"t": "selfDmg", "n": 10}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "drawOnKO", "n": 2}]}]}, "pinsel": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 0, "label": "?", "dice": true}, {"cost": 2, "dmg": 50, "fx": [{"t": "draw", "n": 1}]}]}, "dur": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 30, "label": "30+", "fx": [{"t": "perOwnBench", "n": 10}]}]}, "buehne": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "ton": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healSelf", "n": 10}]}, {"cost": 2, "dmg": 50}]}, "direktor": {"hp": 80, "retreat": 3, "legend": true, "passiveKey": "onPlayAny", "atks": [{"cost": 1, "dmg": 10, "fx": [{"t": "benchSplash", "n": 10}]}, {"cost": 2, "dmg": 50}]}, "stempel": {"hp": 70, "retreat": 0, "legend": true, "passiveKey": "onPlayTwo", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "draw", "n": 1}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "strip", "n": 1}]}]}};
@@ -1091,17 +1093,17 @@ async function startGame(G){
     draw(p,G.R.startHand);
     while(!teachersIn(p.hand).length){p.deck.push(...p.hand);p.hand=[];shuffle(p.deck,G.rng);draw(p,G.R.startHand);G.stats.mulligans++;log(G,`${who(G,pi)} hat keine Lehrkraft auf der Hand und mischt neu.`,pi);}
   });
-  // Neu ziehen (Gwent): bis zu 2 Handkarten unter das Deck legen und dafür neue ziehen
+  // Neue Hand (Gwent): einmal entscheiden, ob man die ganze Starthand behält oder komplett neu zieht
   for(const pi of [0,1]){
     const p=G.players[pi]; let n=0;
     while(n<G.R.redraw&&p.deck.length){
       let x;
-      if(isHuman(G,pi)){render(G);x=await choose(G,pi,`Neu ziehen: Tippe eine Karte an, die du tauschen willst (noch ${G.R.redraw-n}×).`,p.hand.map(i=>({inst:i,score:0})),{optional:"Hand behalten"});}
+      if(isHuman(G,pi)){render(G);x=await choose(G,pi,"Deine Starthand: behalten oder komplett neu ziehen?",p.hand.map(i=>({inst:i,score:0})),{optional:"Hand behalten",action:"Neue Hand ziehen",view:true});}
       else x=aiRedrawPick(G,p);
       if(!x) break;
-      p.hand.splice(p.hand.indexOf(x),1); p.deck.unshift(x); draw(p,1); n++; G.stats.redraws++;
+      const k=p.hand.length; p.deck.push(...p.hand); p.hand=[]; shuffle(p.deck,G.rng); draw(p,k); n++; G.stats.redraws++;
     }
-    if(n) log(G,`${who(G,pi)} tauscht ${n} Karte${n>1?"n":""}.`,pi);
+    if(n) log(G,`${who(G,pi)} zieht eine neue Hand.`,pi);
     while(!teachersIn(p.hand).length){p.deck.push(...p.hand);p.hand=[];shuffle(p.deck,G.rng);draw(p,G.R.startHand);G.stats.mulligans++;log(G,`${who(G,pi)} hat keine Lehrkraft auf der Hand und mischt neu.`,pi);}
   }
   G.players.forEach((p,pi)=>{if(!isHuman(G,pi)){const t=teachersIn(p.hand).sort((a,b)=>b.card.hp-a.card.hp)[0];p.hand.splice(p.hand.indexOf(t),1);p.active=t;}});
@@ -1230,11 +1232,8 @@ function aiJokerScore(G,pi){
   return 0;
 }
 function aiRedrawPick(G,p){
-  // Zu wenige Lehrkräfte: eine Unterstützungskarte tauschen. Sonst die schwächste Unterstützungskarte, wenn sie doppelt ist.
-  const sups=p.hand.filter(i=>i.sup);
-  if(teachersIn(p.hand).length<2&&sups.length) return sups[0];
-  const ids=sups.map(i=>i.sup.id); const dup=sups.find((i,k)=>ids.indexOf(i.sup.id)!==k);
-  return dup||null;
+  // Neue Hand nur, wenn höchstens 1 Lehrkraft dabei ist (Rückgabe: irgendeine Handkarte = neu ziehen, null = behalten)
+  return teachersIn(p.hand).length<2?p.hand[0]||null:null;
 }
 
 /* ---------- Computergegner ---------- */
@@ -1742,12 +1741,15 @@ function chooseModal(title,options,opt={}){
   return new Promise(res=>{
     $("modal")?.remove();selHand=selField=null;armed=false;render();
     const w=document.createElement("div");w.className="mwrap";w.id="modal";const sc=L()?0.78:0.62;
-    w.innerHTML=`<div class="mbox" role="dialog" aria-modal="true" aria-label="${esc(title)}"><h3>${esc(title)}</h3><div class="mopts">${options.map((o,k)=>{const i=o.inst;const live=i.card&&(i.dmg||i.energy)?`${hpLeft(i)}/${i.card.hp} KP · ${i.energy}⚡`:"";
-      return `<button class="mopt" data-o="${k}" style="width:${200*sc}px;height:${280*sc}px" aria-label="${esc(i.card?i.card.name:i.sup.name)}"><div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px">${fullHTML(i)}</div>${live?`<span class="st">${live}</span>`:""}</button>`;}).join("")}</div>
-      ${opt.optional?`<div class="mrow"><button class="btn" data-o="skip">${esc(opt.optional)}</button></div>`:""}</div>`;
+    // view: Karten nur zeigen, entschieden wird mit zwei Knöpfen (action = 0, optional = -1)
+    const tag=opt.view?"div":"button";
+    w.innerHTML=`<div class="mbox ${opt.view?"mview":""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><h3>${esc(title)}</h3><div class="mopts">${options.map((o,k)=>{const i=o.inst;const live=i.card&&(i.dmg||i.energy)?`${hpLeft(i)}/${i.card.hp} KP · ${i.energy}⚡`:"";
+      return `<${tag} class="mopt" ${opt.view?"":`data-o="${k}"`} style="width:${200*sc}px;height:${280*sc}px" aria-label="${esc(i.card?i.card.name:i.sup.name)}"><div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px">${fullHTML(i)}</div>${live?`<span class="st">${live}</span>`:""}</${tag}>`;}).join("")}</div>
+      ${opt.optional||opt.action?`<div class="mrow">${opt.action?`<button class="btn" data-o="0">${esc(opt.action)}</button>`:""}${opt.optional?`<button class="btn ${opt.view?"pri":""}" data-o="skip">${esc(opt.optional)}</button>`:""}</div>`:""}</div>`;
     $("stage").appendChild(w);
-    w.addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;w.remove();res(b.dataset.o==="skip"?-1:+b.dataset.o);render();});
-    w.querySelector("button")?.focus({preventScroll:true});
+    let done=false;
+    w.addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b||done)return;done=true;e.stopPropagation();w.remove();res(b.dataset.o==="skip"?-1:+b.dataset.o);render();});
+    (opt.view?w.querySelector('[data-o="skip"]'):w.querySelector("button"))?.focus({preventScroll:true});
   });
 }
 function confirmBox(text,yes,onYes){
@@ -2113,7 +2115,7 @@ const Menu=(()=>{
       <p class="mini">Der Startspieler darf im ersten Zug weder angreifen noch Unterstützer oder Joker spielen.</p>
       <h3>Schwächen</h3><p class="cyc">${cyc}</p><p>Gegen die Gruppe rechts daneben macht eine Lehrkraft +${RULES.weakBonus} Schaden.</p>
       <h3>Die 4 Zweige</h3><div class="zrules">${zt}</div>
-      <details class="more"><summary>Besondere Regeln</summary><ul><li><b>Neu ziehen:</b> Bis zu 2 Startkarten tauschen.</li><li><b>Heldenkarte:</b> Gegnerische Unterstützer und Joker wirken nicht auf die Schulleitung.</li><li><b>Sonderkarten:</b> ${SUPPORTS.filter(s=>s.gwent).map(s=>esc(s.name)).join(", ")}.</li></ul></details>
+      <details class="more"><summary>Besondere Regeln</summary><ul><li><b>Neue Hand:</b> Zu Beginn darfst du einmal deine ganze Starthand abwerfen und komplett neu ziehen.</li><li><b>Heldenkarte:</b> Gegnerische Unterstützer und Joker wirken nicht auf die Schulleitung.</li><li><b>Sonderkarten:</b> ${SUPPORTS.filter(s=>s.gwent).map(s=>esc(s.name)).join(", ")}.</li></ul></details>
       <details class="more"><summary>Online spielen</summary>${window.LZ_SITE?`<p>Schick den Link dieser Seite an deine Mitspielerinnen und Mitspieler. Wer eine Herausforderung erstellt, wartet unter „Spielen“. Die anderen sehen sie dort und treten bei.</p>`:`<p>Mitspielerinnen und Mitspieler brauchen einen claude.ai-Zugang zu dieser Seite. Lade sie über „Teilen“ per E-Mail mit dem Recht <b>Bearbeiten</b> ein (ohne öffentlichen Link). Dann sehen sie deine Herausforderung unter „Spielen“. Bitte die Echtnamen nur mit Einverständnis der Lehrkräfte teilen.</p>`}</details>
       <p><a href="https://claude.ai/artifact/JnYEqSzdzPNuHWdzYJpfen#regeln" target="_blank" rel="noopener">Ausführliche Regeln und Spieltest-Zahlen</a></p></section>`;
   }
