@@ -51,10 +51,14 @@ async function boot(){
   // Beim Verlassen die Verbindung sauber schließen, dann führt der Server die onDisconnect-Löschung sofort aus
   addEventListener("pagehide",()=>{try{goOffline(dbi);}catch(e){}});
   addEventListener("pageshow",e=>{if(e.persisted){goOnline(dbi);refreshAll();}});
+  // Einträge ohne Lebenszeichen seit über 10 Minuten räumt jeder Besucher weg (die Regeln erlauben genau das)
+  const swept=new Set();
+  const sweep=(path,v)=>{const n=Date.now()+skew;Object.keys(v).forEach(k=>{const t=v[k]&&v[k].t;
+    if(k===uid||swept.has(path+"/"+k)||(typeof t==="number"&&n-t<660e3))return;swept.add(path+"/"+k);remove(ref(dbi,path+"/"+k)).catch(()=>{});});};
   const fresh=(k,v)=>k===uid||(v&&typeof v.t==="number"&&Date.now()+skew-v.t<STALE);
   function peersAt(path,cb,err){let last=null;const emit=()=>{const v=last||{};const peers=Object.keys(v).filter(k=>fresh(k,v[k])).map(k=>({peer:k,by:k,isMe:k===uid,sameTab:k===uid,kind:"viewer",guest:false,presence:v[k]||{},updatedAt:Date.now()}));cb({peers,joined:[],left:[],updated:[]});};
     const tick=setInterval(()=>{if(last)emit();},30e3);
-    const off=onValue(ref(dbi,path),s=>{last=s.val()||{};emit();},e=>err&&err({code:"upstream_error",message:String(e)}));
+    const off=onValue(ref(dbi,path),s=>{last=s.val()||{};emit();sweep(path,last);},e=>err&&err({code:"upstream_error",message:String(e)}));
     return ()=>{clearInterval(tick);off();};}
   async function presenceAt(path,p){pres.set(path,p);if(visible())await writePres(path);}
   const room={

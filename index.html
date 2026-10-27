@@ -1886,7 +1886,7 @@ const Online=(()=>{
     ready=!!(db&&myId);
     if(room){try{room.presence({s:"menu"});room.onPeers(c=>{const v=c.peers.filter(p=>p.kind==="viewer");peers=v.length;if(window.LZ_SITE)here=new Set(v.map(p=>p.by));Menu.refreshOnline();},()=>{});}catch(e){}}
     if(ready){
-      db.collection("lobby").onSnapshot(s=>{lobby=s.docs.map(d=>Object.assign({id:d.id},d.data()));resolveNames();check();Menu.refreshOnline();},()=>{ready=false;Menu.refreshOnline();});
+      db.collection("lobby").onSnapshot(s=>{lobby=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(window.LZ_SITE)sweepOld();resolveNames();check();Menu.refreshOnline();},()=>{ready=false;Menu.refreshOnline();});
     }
     return {db,uid:myId};
   }
@@ -1894,6 +1894,10 @@ const Online=(()=>{
     if(!user) return;const ids=[...new Set(lobby.flatMap(l=>[l.host,l.guest]).filter(Boolean))].filter(id=>!(id in names));
     if(!ids.length) return;try{const ps=await user.profiles(ids);ids.forEach(id=>names[id]=(ps[id]&&ps[id].name)||"Mitspieler");Menu.refreshOnline();}catch(e){}
   }
+  // Partien, die älter als 6 Stunden sind, räumt die Webseite weg: erst die Züge, dann den Lobby-Eintrag
+  const swept=new Set();
+  function sweepOld(){lobby.filter(l=>!swept.has(l.id)&&Date.now()-(l.t||0)>6*3600e3+10*60e3).slice(0,10).forEach(l=>{swept.add(l.id);
+    db.collection("matches").doc(l.id).delete().catch(()=>{}).then(()=>db.collection("lobby").doc(l.id).delete()).catch(()=>{});});}
   const nameOf=id=>id===myId?(myNameStr||"Du"):(names[id]||"Mitspieler");
   // Auf der Webseite zählen fremde Herausforderungen nur, solange der Ersteller noch online ist
   const open=()=>lobby.filter(l=>l.st==="open"&&Date.now()-(l.t||0)<T_OPEN&&(!here||l.host===myId||here.has(l.host)));
