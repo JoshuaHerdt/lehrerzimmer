@@ -1351,7 +1351,8 @@ function zweigHTML(p){const Zw=ZWEIGE[p.zweig];return `<div class="card f" style
 /* ---------- Zeichnen: gebündelt pro Frame, nur geänderte Elemente werden ersetzt ---------- */
 const hs=s=>{let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36);};
 let rq=0,lastCur=-1,dragEnergy=false,dragHand=null,prevEn=new Map(),handSig="",dockSig="";
-function render(){if(rq)return;rq=requestAnimationFrame(()=>{rq=0;try{draw();}catch(e){console.error(e);}});}
+// Zeichnen im nächsten Frame; falls der Browser keine Frames liefert (Hintergrund), spätestens nach 60 ms
+function render(){if(rq)return;let done=false;const go=()=>{if(done)return;done=true;rq=0;try{draw();}catch(e){console.error(e);}};rq=1;requestAnimationFrame(go);setTimeout(go,60);}
 function sync(parent,items){
   const have=new Map([...parent.children].map(el=>[el.dataset.k,el])),keep=new Set();
   for(const it of items){
