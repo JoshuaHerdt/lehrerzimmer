@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="de">
+<meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="description" content="Lehrerzimmer – das Sammelkartenspiel der FOS Holzkirchen.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lehrerzimmer Arena</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Kalam:wght@400;700&display=swap">
+<style>
+/* Layout: Die Blender-Szene ist die Bühne. Eine Stage im Seitenverhältnis des Renders (quer oder hoch) wird eingepasst;
+   Feldkarten liegen per matrix3d perspektivisch in den gerenderten Mulden, Bedienelemente schweben als HUD darüber.
+   Eine feste Optik (heller Klassenraum), deshalb ein Farbsatz für beide Themes. */
+:root{
+  --ink:#16202a; --ink-2:#4b5a68; --paper:#fbf8f1; --card:#fffdf8; --line:#d9d2c2;
+  --pen:#c62f28; --pen-ink:#ffffff; --chalk:#f4f1e6; --gold:#d9a441; --ok:#2e8b57; --night:#1b2a33;
+  --mint:#1f78b4; --spo:#2e8b57; --kun:#8a4fbf; --ges:#c68511; --spr:#c2412d; --sl:#3b4453; --off:#7a8494; --sup:#7a4a2a;
+  --f-display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-chalk:"Kalam","Comic Sans MS","Bradley Hand",cursive;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--f-body);overflow:hidden;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+#app{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
+#app::before{content:"";position:absolute;inset:-40px;background:var(--bgimg) center/cover no-repeat;filter:blur(24px) saturate(1.1) brightness(.8);transform:scale(1.05)}
+#stage{position:relative;flex:none;overflow:hidden;box-shadow:0 30px 80px -30px rgba(0,0,0,.6);--u:1px}
+#stage>img.bg{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.layer{position:absolute;inset:0;pointer-events:none}
+.layer>*{pointer-events:auto}
+
+/* Kartenflächen */
+.card{position:absolute;left:0;top:0;width:160px;height:223px;transform-origin:0 0;border-radius:11px;background:var(--c);padding:6px;box-sizing:border-box;
+  box-shadow:0 2px 0 rgba(0,0,0,.18);font-family:var(--f-body);color:var(--ink);cursor:pointer}
+.card .in{height:100%;border-radius:7px;background:var(--card);display:grid;grid-template-rows:auto 1fr auto auto;gap:4px;padding:7px 8px 6px;box-sizing:border-box}
+.card .top{display:flex;justify-content:space-between;align-items:baseline;gap:4px}
+.card .nm{font-family:var(--f-display);font-weight:800;font-size:15px;line-height:1.02;letter-spacing:-.01em}
+.card .hp{font-family:var(--f-display);font-weight:800;font-size:17px;color:var(--c);white-space:nowrap}
+.card .hp small{font-size:9px;font-weight:700;color:var(--ink-2);margin-left:1px}
+.card .art{border-radius:6px;background:repeating-linear-gradient(0deg,transparent 0 9px,color-mix(in srgb,var(--c) 14%,transparent) 9px 10px),repeating-linear-gradient(90deg,transparent 0 9px,color-mix(in srgb,var(--c) 14%,transparent) 9px 10px),color-mix(in srgb,var(--c) 10%,#fff);
+  display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:40px;color:var(--c);letter-spacing:-.03em}
+.card .bar{height:7px;border-radius:4px;background:#e7e1d2;overflow:hidden}
+.card .bar i{display:block;height:100%;background:var(--ok);border-radius:4px;transition:width .5s ease}
+.card .bar.low i{background:var(--pen)}
+.card .meta{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+.cups{display:flex;gap:2px}
+.cup{width:14px;height:14px;border-radius:50%;background:var(--gold);display:grid;place-items:center;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
+.cup svg{width:9px;height:9px;fill:#5a3b00}
+.card.sup{--c:#7a4a2a}
+.card.sup .art{font-size:30px}
+.card .txt{font-size:10px;line-height:1.25;color:var(--ink-2)}
+.card.back{background:#1d2a44;padding:7px}
+.card.back .in{background:#1d2a44;border:3px solid var(--gold);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:22px;color:#fff;text-align:center;line-height:1}
+.card.back .in em{font-style:normal;color:var(--gold)}
+.card.hit{animation:hit .45s ease}
+@keyframes hit{0%,100%{filter:none}30%{filter:brightness(1.6) saturate(.6)}}
+.card.ko{transition:opacity .5s ease;opacity:0}
+.card.target{outline:4px solid var(--gold);outline-offset:2px;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{outline-color:#fff6d8}}
+.card:focus-visible{outline:4px solid #fff;outline-offset:3px}
+
+/* Feldkarte: kräftig und auf kleine Größe lesbar */
+.card.f{padding:0;background:var(--c);border:5px solid #fffdf8;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.card.f .in{background:none;padding:0;grid-template-rows:1fr auto;gap:0;border-radius:6px;overflow:hidden}
+.card.f .art{background:radial-gradient(circle at 50% 38%,color-mix(in srgb,#fff 22%,var(--c)),var(--c) 70%);color:#fff;font-size:64px;border-radius:0;position:relative;text-shadow:0 3px 0 rgba(0,0,0,.18)}
+.card.f .hpb{position:absolute;right:6px;top:6px;background:#fffdf8;color:var(--ink);font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1;border-radius:999px;padding:5px 9px}
+.card.f .hpb.low{background:var(--pen);color:#fff}
+.card.f .en{position:absolute;left:6px;bottom:6px;display:flex;gap:3px}
+.card.f .en .cup{width:24px;height:24px}.card.f .en .cup svg{width:15px;height:15px}
+.card.f .foot{background:#fffdf8;padding:6px 8px 7px;display:grid;gap:5px}
+.card.f .nm{font-size:19px;line-height:1.02}
+.card.f .bar{height:9px}
+#peek{position:absolute;z-index:44;pointer-events:none;filter:drop-shadow(0 18px 30px rgba(0,0,0,.45));transition:opacity .15s ease}
+#peek.off{opacity:0}
+/* leere Zonen als Ziel */
+.slot{position:absolute;left:0;top:0;width:160px;height:223px;transform-origin:0 0;border-radius:12px;border:5px dashed transparent;box-sizing:border-box;pointer-events:none}
+.slot.drop{border-color:#ffe08a;background:rgba(255,224,138,.18);animation:pulse 1s ease-in-out infinite}
+.lbl{position:absolute;transform:translate(-50%,0);font-size:calc(var(--u)*11);font-weight:700;color:#e9f3f1;text-transform:uppercase;letter-spacing:.08em;text-shadow:0 1px 2px rgba(0,0,0,.5);white-space:nowrap;pointer-events:none}
+
+/* Kreide-Punkte auf der Tafel */
+.chalk{position:absolute;display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*28);font-family:var(--f-chalk);color:var(--chalk);text-shadow:0 0 1px rgba(255,255,255,.4);pointer-events:none}
+.chalk .side{display:flex;flex-direction:column;align-items:center;line-height:1}
+.chalk .who{font-size:calc(var(--u)*20)}
+.chalk .pts{font-size:calc(var(--u)*56);font-weight:700}
+.chalk .pts small{font-size:.45em;opacity:.75}
+.chalk .vs{font-size:calc(var(--u)*30);opacity:.8}
+.chalk .tally{display:flex;gap:calc(var(--u)*6);margin-top:calc(var(--u)*4)}
+.chalk .tally i{width:calc(var(--u)*16);height:calc(var(--u)*16);border:2px solid var(--chalk);border-radius:50%;opacity:.55}
+.chalk .tally i.on{background:var(--chalk);opacity:1}
+
+/* HUD */
+.plate{position:absolute;display:flex;align-items:center;gap:calc(var(--u)*10);background:rgba(251,248,241,.94);border-radius:calc(var(--u)*14);padding:calc(var(--u)*8) calc(var(--u)*14);box-shadow:0 8px 24px -10px rgba(0,0,0,.5);font-size:calc(var(--u)*13)}
+.plate .dot{width:calc(var(--u)*12);height:calc(var(--u)*12);border-radius:50%;background:var(--c)}
+.plate b{font-family:var(--f-display);font-weight:800;font-size:calc(var(--u)*16)}
+.plate .zw{font-weight:700;color:var(--c)}
+.plate .mini{color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.btn{font:inherit;font-weight:700;border:0;border-radius:calc(var(--u)*12);padding:calc(var(--u)*9) calc(var(--u)*14);cursor:pointer;background:var(--card);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn.joker{background:color-mix(in srgb,var(--c) 16%,var(--card));border:2px solid var(--c)}
+#endturn{position:absolute;width:calc(var(--u)*118);height:calc(var(--u)*118);border-radius:50%;border:0;cursor:pointer;
+  background:radial-gradient(circle at 35% 30%,#ef5b52,var(--pen) 60%,#8f1d18);color:#fff;font-family:var(--f-display);font-weight:800;font-size:calc(var(--u)*16);line-height:1.05;
+  box-shadow:0 calc(var(--u)*7) 0 #6d1511,0 calc(var(--u)*16) calc(var(--u)*24) -6px rgba(0,0,0,.5);text-align:center;padding:0}
+#endturn:active{transform:translateY(calc(var(--u)*5));box-shadow:0 calc(var(--u)*2) 0 #6d1511}
+#endturn:disabled{filter:grayscale(.7) brightness(.85);cursor:wait}
+#endturn small{display:block;font-family:var(--f-body);font-weight:700;font-size:calc(var(--u)*10);opacity:.85;margin-top:3px}
+#turnflag{position:absolute;white-space:nowrap;font-family:var(--f-display);font-weight:800;font-size:calc(var(--u)*17);background:var(--ink);color:var(--paper);padding:calc(var(--u)*7) calc(var(--u)*14);border-radius:999px;box-shadow:0 6px 18px -8px rgba(0,0,0,.6)}
+#turnflag.you{background:var(--pen)}
+#logo{position:absolute;font-family:var(--f-display);font-weight:800;font-size:calc(var(--u)*24);letter-spacing:-.03em;color:var(--ink);line-height:.9;background:rgba(251,248,241,.9);padding:calc(var(--u)*8) calc(var(--u)*12);border-radius:calc(var(--u)*12)}
+#logo em{font-style:normal;color:var(--pen)}
+#logo small{display:block;font-family:var(--f-chalk);font-weight:400;font-size:calc(var(--u)*13);color:var(--pen);letter-spacing:0;margin-top:2px}
+#energy{position:absolute;display:grid;place-items:center;border-radius:50%;border:0;cursor:pointer;background:radial-gradient(circle at 40% 35%,#ffe08a,var(--gold) 55%,#9c6b12);
+  box-shadow:0 calc(var(--u)*5) 0 #7a520c,0 10px 18px -6px rgba(0,0,0,.5)}
+#energy svg{width:46%;height:46%;fill:#4a3000}
+#energy:disabled{filter:grayscale(.8);cursor:default}
+#energy.armed{animation:pulse 1s ease-in-out infinite;outline:4px solid #fff;outline-offset:3px}
+#energy .badge{position:absolute;right:-6%;top:-6%;background:var(--ink);color:#fff;font-weight:700;font-size:calc(var(--u)*11);border-radius:999px;padding:2px 7px}
+
+/* Hand */
+#hand{position:absolute;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+#hand .hc{position:relative;flex:none;pointer-events:auto;transition:transform .2s ease,margin .2s ease;transform-origin:50% 120%}
+#hand .hc .card{position:relative;transform:none}
+#hand .hc:hover,#hand .hc:focus-within{z-index:5}
+#hand .hc.lift{z-index:6}
+.ghost{position:absolute;z-index:50;transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .55s ease;pointer-events:none}
+
+/* Aktionsfenster und Meldungen */
+#sheet{position:absolute;z-index:40;background:var(--paper);border-radius:calc(var(--u)*16);box-shadow:0 20px 50px -15px rgba(0,0,0,.6);padding:calc(var(--u)*14);width:min(calc(var(--u)*360),92%);box-sizing:border-box;font-size:calc(var(--u)*13)}
+#sheet h3{margin:0 0 calc(var(--u)*8);font-family:var(--f-display);font-size:calc(var(--u)*19);text-wrap:balance}
+#sheet .atk{display:grid;grid-template-columns:auto 1fr auto;gap:calc(var(--u)*10);align-items:center;width:100%;text-align:left;margin-top:calc(var(--u)*6);background:var(--card);border:2px solid var(--line);border-radius:calc(var(--u)*12);padding:calc(var(--u)*9) calc(var(--u)*11);font:inherit;cursor:pointer}
+#sheet .atk:hover:not(:disabled){border-color:var(--pen)}
+#sheet .atk:disabled{opacity:.5;cursor:not-allowed}
+#sheet .atk b{font-size:calc(var(--u)*15)}
+#sheet .atk small{display:block;color:var(--ink-2);font-size:calc(var(--u)*11.5)}
+#sheet .atk .d{font-family:var(--f-display);font-weight:800;font-size:calc(var(--u)*24)}
+#sheet .row{display:flex;gap:calc(var(--u)*8);justify-content:flex-end;margin-top:calc(var(--u)*10)}
+#toast{position:absolute;z-index:45;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:calc(var(--u)*9) calc(var(--u)*18);font-weight:700;font-size:calc(var(--u)*14);box-shadow:0 10px 26px -10px rgba(0,0,0,.6);transition:opacity .3s ease;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+#toast.off{opacity:0}
+.dmg{position:absolute;z-index:46;font-family:var(--f-display);font-weight:800;color:#fff;-webkit-text-stroke:2px var(--pen);paint-order:stroke;text-shadow:0 4px 0 var(--pen);pointer-events:none;animation:rise 1.1s ease-out forwards}
+@keyframes rise{0%{transform:translate(-50%,0) scale(.6);opacity:0}15%{transform:translate(-50%,-20%) scale(1.15);opacity:1}100%{transform:translate(-50%,-140%) scale(1);opacity:0}}
+#over{position:absolute;inset:0;z-index:60;display:grid;place-items:center;background:rgba(22,32,42,.55)}
+#over .box{background:var(--paper);border-radius:18px;padding:22px 26px;text-align:center;max-width:86%}
+#over h2{margin:0 0 6px;font-family:var(--f-display);font-size:30px}
+#over p{margin:0 0 14px;font-family:var(--f-chalk);font-size:20px;color:var(--pen)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+/* Phase 2: Engine-Anbindung */
+[hidden]{display:none!important}
+#stage:not(.pt) #plate0{max-width:calc(var(--u)*275);flex-wrap:wrap;row-gap:calc(var(--u)*6)}
+#stage.pt #plate0{max-width:calc(100% - var(--u)*130);flex-wrap:wrap;row-gap:calc(var(--u)*6)}
+#stage.pt #plate0 .mini{display:none}
+#stage.pt .plate .btn{padding:calc(var(--u)*7) calc(var(--u)*10);font-size:calc(var(--u)*12.5)}
+.card.f.sel{outline:5px solid #fff;outline-offset:3px}
+.card.f.enter .in{animation:enter .5s ease}
+@keyframes enter{0%{opacity:0;filter:brightness(2)}100%{opacity:1;filter:none}}
+.card.f.gone{animation:gone .7s ease forwards;pointer-events:none}
+@keyframes gone{0%{opacity:1;filter:none}100%{opacity:0;filter:grayscale(1) brightness(1.4)}}
+.card.f.dead{filter:grayscale(.85) brightness(.95)}
+.card.f .badge{position:absolute;left:6px;top:6px;background:var(--ink);color:#fff;font-family:var(--f-body);font-weight:700;font-size:15px;border-radius:999px;padding:3px 8px;text-shadow:none}
+.card.f .lock{position:absolute;right:6px;bottom:6px;background:var(--pen);color:#fff;font-family:var(--f-body);font-weight:700;font-size:13px;border-radius:999px;padding:3px 8px;text-shadow:none}
+.heal{-webkit-text-stroke:2px var(--ok);text-shadow:0 4px 0 var(--ok)}
+/* volle Karte (Vorschau, Auswahl) */
+.card.full{width:200px;height:280px;cursor:default}
+.card.full{overflow:hidden}
+.card.full .in{grid-template-rows:auto auto 54px auto 1fr auto;gap:3px;overflow:hidden}
+.card.full .nm{font-size:17px}
+.card.full .fach{font-size:10px;color:var(--ink-2);line-height:1.2}
+.card.full .art{font-size:34px}
+.card.full .pass{font-size:8.6px;line-height:1.2;border:1px dashed color-mix(in srgb,var(--c) 60%,transparent);border-radius:5px;padding:3px 5px}
+.card.full .pass b{display:block;color:var(--c);font-size:10px}
+.card.full .atks{display:grid;gap:3px;align-content:start}
+.card.full .ar{display:grid;grid-template-columns:auto 1fr auto;gap:5px;align-items:center;border-top:1px solid var(--line);padding-top:3px}
+.card.full .ar b{font-size:11.5px;line-height:1.1}
+.card.full .ar span.t{display:block;font-size:8.2px;line-height:1.15;color:var(--ink-2)}
+.card.full .ar .d{font-family:var(--f-display);font-weight:800;font-size:17px}
+.card.full .ar .cup{width:12px;height:12px}.card.full .ar .cup svg{width:8px;height:8px}
+.card.full .ft{display:flex;justify-content:space-between;font-size:9px;color:var(--ink-2);gap:4px}
+.card.full.sup .in{grid-template-rows:auto auto 1fr auto}
+.card.full.sup .art{font-size:48px}
+.card.full .txt{font-size:12px}
+/* Auswahlfenster der Engine */
+.mwrap{position:absolute;inset:0;z-index:55;background:rgba(22,32,42,.55);display:grid;place-items:center;padding:calc(var(--u)*12);box-sizing:border-box}
+.mbox{background:var(--paper);border-radius:calc(var(--u)*18);padding:calc(var(--u)*16);max-width:100%;max-height:100%;overflow:auto;box-sizing:border-box;box-shadow:0 30px 60px -20px rgba(0,0,0,.6)}
+.mbox h3{margin:0 0 calc(var(--u)*12);font-family:var(--f-display);font-size:calc(var(--u)*20);text-wrap:balance;max-width:40ch}
+.mopts{display:flex;flex-wrap:wrap;gap:calc(var(--u)*10);justify-content:center}
+.mopt{border:0;padding:0;background:none;cursor:pointer;border-radius:12px;position:relative}
+.mopt:hover .card,.mopt:focus-visible .card{outline:4px solid var(--gold);outline-offset:2px}
+.mopt .st{position:absolute;left:50%;bottom:-2px;transform:translate(-50%,50%);background:var(--ink);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.mrow{display:flex;gap:calc(var(--u)*8);justify-content:center;margin-top:calc(var(--u)*16);flex-wrap:wrap}
+.btn.pri{background:var(--pen);color:#fff}
+/* Aktionsblase über der Hand */
+#bubble{position:absolute;z-index:42;background:var(--paper);border-radius:calc(var(--u)*14);box-shadow:0 14px 30px -12px rgba(0,0,0,.55);padding:calc(var(--u)*10) calc(var(--u)*12);width:min(calc(var(--u)*300),94%);box-sizing:border-box;font-size:calc(var(--u)*12.5)}
+#bubble b.t{font-family:var(--f-display);font-size:calc(var(--u)*16)}
+#bubble p{margin:calc(var(--u)*4) 0 calc(var(--u)*8);color:var(--ink-2);line-height:1.35}
+#bubble .row{display:flex;gap:calc(var(--u)*8);flex-wrap:wrap}
+#bubble .why{color:var(--pen);font-weight:700;margin:calc(var(--u)*6) 0 0}
+/* Lobby */
+#lobby{position:absolute;inset:0;z-index:58;display:grid;place-items:center;background:rgba(22,32,42,.35);padding:calc(var(--u)*14);box-sizing:border-box}
+#lobby .box{background:var(--paper);border-radius:calc(var(--u)*20);padding:calc(var(--u)*20);width:min(calc(var(--u)*720),100%);max-height:100%;overflow:auto;box-sizing:border-box;box-shadow:0 30px 70px -20px rgba(0,0,0,.6)}
+#lobby h2{margin:0;font-family:var(--f-display);font-size:calc(var(--u)*30);letter-spacing:-.02em}
+#lobby h2 em{font-style:normal;color:var(--pen)}
+#lobby .lead{margin:calc(var(--u)*4) 0 calc(var(--u)*14);color:var(--ink-2);font-size:calc(var(--u)*13.5);max-width:62ch}
+.zg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(var(--u)*10)}
+.zb{text-align:left;border:2px solid var(--line);border-top:calc(var(--u)*6) solid var(--c);border-radius:calc(var(--u)*14);background:var(--card);padding:calc(var(--u)*10) calc(var(--u)*12);cursor:pointer;font:inherit;color:var(--ink);display:grid;gap:calc(var(--u)*4);min-width:0}
+.zb[aria-checked="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card));box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
+.zb b.n{font-family:var(--f-display);font-size:calc(var(--u)*17)}
+.zb span{font-size:calc(var(--u)*12);line-height:1.35;color:var(--ink-2)}
+.zb span b{color:var(--ink)}
+.dm{display:flex;gap:calc(var(--u)*8);margin:calc(var(--u)*14) 0 0;flex-wrap:wrap;align-items:center;font-size:calc(var(--u)*13)}
+.chipb{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:calc(var(--u)*6) calc(var(--u)*12);font:inherit;font-weight:700;cursor:pointer}
+.chipb[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.lfoot{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--u)*10);margin-top:calc(var(--u)*16);flex-wrap:wrap}
+.lfoot a{color:var(--ink-2);font-size:calc(var(--u)*12.5)}
+#startbtn{font-size:calc(var(--u)*17);padding:calc(var(--u)*12) calc(var(--u)*22)}
+/* Verlauf */
+#logbox{position:absolute;z-index:43;background:rgba(251,248,241,.97);border-radius:calc(var(--u)*14);box-shadow:0 14px 30px -12px rgba(0,0,0,.55);padding:calc(var(--u)*10) calc(var(--u)*14);width:min(calc(var(--u)*340),92%);max-height:55%;overflow:auto;box-sizing:border-box;font-size:calc(var(--u)*12.5)}
+#logbox ol{margin:0;padding-left:1.2em;display:grid;gap:3px}
+#logbox li.sys{color:var(--pen);font-weight:700;list-style:none;margin-left:-1.2em}
+#logbox li.l1{color:var(--ink-2)}
+
+/* ===== Menü (App-Hülle) ===== */
+#app{visibility:hidden}
+body.ingame #app{visibility:visible}
+body.ingame #menu{display:none}
+#menu{--u:1px;position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;overflow:hidden;color:var(--ink)}
+#menu::before{content:"";position:absolute;inset:-40px;background:var(--bgimg) center/cover no-repeat;filter:blur(18px) saturate(1.05) brightness(.85);z-index:-1}
+#menu .bar{display:flex;align-items:center;gap:14px;padding:12px max(16px,env(safe-area-inset-left,0px)) 10px;padding-right:max(16px,env(safe-area-inset-right,0px));flex-wrap:wrap}
+#menu .brand{font-family:var(--f-display);font-weight:800;font-size:24px;letter-spacing:-.03em;background:rgba(251,248,241,.94);padding:6px 12px;border-radius:12px;line-height:1}
+#menu .brand em{font-style:normal;color:var(--pen)}
+#menu .brand small{display:block;font-family:var(--f-chalk);font-weight:400;font-size:13px;color:var(--pen);letter-spacing:0}
+#menu .tabs{display:flex;gap:4px;background:rgba(251,248,241,.94);border-radius:999px;padding:4px;margin-left:auto}
+#menu .tabs button{border:0;background:transparent;font:inherit;font-weight:700;font-size:14px;padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--ink-2)}
+#menu .tabs button[aria-current="page"]{background:var(--ink);color:var(--paper)}
+#menu .who{display:flex;align-items:center;gap:8px;background:rgba(251,248,241,.94);border-radius:999px;padding:6px 12px;font-size:13px}
+#menu .who .dot{width:10px;height:10px;border-radius:50%;background:var(--ok)}
+#menu .who .mini{color:var(--ink-2)}
+#menu .view{flex:1;overflow:auto;padding:6px max(16px,env(safe-area-inset-left,0px)) 28px;padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:14px;align-content:start;max-width:1180px;width:100%;margin:0 auto;box-sizing:border-box}
+.panel,.hero,.tile{background:rgba(251,248,241,.97);border-radius:18px;box-shadow:0 18px 40px -24px rgba(0,0,0,.55);padding:18px;box-sizing:border-box;min-width:0}
+.panel h2,.hero h1{margin:0 0 6px;font-family:var(--f-display);letter-spacing:-.02em;text-wrap:balance}
+.hero h1{font-size:clamp(30px,5vw,46px);line-height:1}.hero h1 em{font-style:normal;color:var(--pen)}
+.panel h2{font-size:22px}.panel h3{font-family:var(--f-display);font-size:16px;margin:16px 0 8px}
+.lead{color:var(--ink-2);margin:0 0 12px;max-width:68ch;line-height:1.45}
+.hero{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:center}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn.big{font-size:16px;padding:12px 18px}
+#menu .btn{padding:8px 14px;border-radius:12px}
+#menu .btn.big{padding:12px 18px}
+.btn{font-size:14px}
+.deckcard{display:grid;gap:6px;border:2px solid var(--line);border-top:8px solid var(--c);border-radius:16px;padding:14px;background:var(--card)}
+.deckcard b{font-family:var(--f-display);font-size:20px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.warn{color:var(--pen);font-weight:700;font-size:13px}.ok{color:var(--ok);font-weight:700;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{display:grid;gap:4px;text-align:left;border:0;font:inherit;color:var(--ink)}
+button.tile{cursor:pointer}button.tile:hover{outline:3px solid var(--gold)}
+.tile b{font-family:var(--f-display);font-size:30px;font-variant-numeric:tabular-nums}
+.tile span:last-child{color:var(--ink-2);font-size:13px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{display:inline-block;background:var(--ink);color:var(--paper);font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;vertical-align:middle;font-family:var(--f-body)}
+.dpick{display:flex;gap:8px;flex-wrap:wrap}
+.dchip{border:2px solid var(--line);border-left:7px solid var(--c);background:var(--card);border-radius:12px;padding:8px 12px;font:inherit;text-align:left;cursor:pointer;display:grid}
+.dchip[aria-pressed="true"]{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 28%,transparent)}
+.dchip span{font-size:12px;color:var(--ink-2)}
+.decklist{display:grid;gap:10px}
+.drow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid var(--line);border-left:8px solid var(--c);border-radius:14px;padding:12px 14px;background:var(--card)}
+.drow>div:first-child{display:grid;gap:2px;min-width:0}.drow b{font-family:var(--f-display);font-size:17px}.drow span{font-size:13px;color:var(--ink-2)}
+.formrow{display:flex;gap:10px;align-items:center;margin:10px 0;flex-wrap:wrap}
+.formrow input{font:inherit;font-size:16px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);min-width:0;flex:1;max-width:360px}
+.zpick2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.zb2{border:2px solid var(--line);border-top:6px solid var(--c);border-radius:12px;background:var(--card);padding:8px 10px;font:inherit;text-align:left;cursor:pointer;display:grid;gap:2px;min-width:0}
+.zb2[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card))}
+.zb2 span{font-size:12px;color:var(--ink-2)}
+.status{margin:10px 0 0;padding:8px 12px;border-radius:10px;background:var(--card);border:2px solid var(--line)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.cg{display:flex;flex-wrap:wrap;gap:10px}
+.pk{position:relative;border:0;padding:0;background:none;cursor:pointer;display:grid;gap:4px;justify-items:center;border-radius:12px}
+.pk.on .mc{outline:4px solid var(--ok);outline-offset:2px;border-radius:12px}
+.pk.locked .mc{filter:grayscale(1);opacity:.35}
+.pk:disabled{cursor:not-allowed}
+.pk .badge2{position:absolute;top:-6px;right:-4px;background:var(--ok);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}
+.pk .lockq,.ac .lockq{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:44px;color:var(--ink-2);opacity:.55;pointer-events:none}
+.step{display:flex;align-items:center;gap:8px}.step .btn{padding:4px 12px}
+.have{font-size:11px;color:var(--ink-2)}
+.mc{position:relative;flex:none}
+.ac{position:relative}.ac.locked .mc{filter:grayscale(1) brightness(1.1);opacity:.3}
+.ac .cnt{position:absolute;top:-6px;right:-4px;background:var(--ink);color:var(--paper);font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}
+.card.full.shiny{background:linear-gradient(120deg,#e9c46a,#f4a261,#e76f51,#b388eb,#4cc9f0,#90e0b0,#e9c46a);background-size:300% 300%}
+@media (prefers-reduced-motion:no-preference){.card.full.shiny{animation:holo 6s ease-in-out infinite}}
+@keyframes holo{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.prog{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:10px 0 14px}
+.prog>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:2px}
+.prog b{font-family:var(--f-display);font-size:20px}.prog .mini{font-size:12px;color:var(--ink-2)}
+.bar2{height:6px;background:#e7e1d2;border-radius:3px;overflow:hidden}.bar2 i{display:block;height:100%;background:var(--pen)}
+.packbar{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.pinfo{flex:1;min-width:240px}.pinfo ul{margin:6px 0;padding-left:18px}
+.pack-env{display:grid;place-items:center;width:150px;height:200px;border-radius:14px;background:linear-gradient(160deg,#1d2a44,#2c3e66);color:#f2c14e;border:3px solid #f2c14e;font-family:var(--f-display);font-weight:800;font-size:20px;cursor:pointer;text-align:center;line-height:1.1;box-shadow:0 12px 30px -12px rgba(0,0,0,.5);flex:none}
+.pack-env small{display:block;font-family:var(--f-chalk);font-weight:400;font-size:15px;margin-top:6px}
+.pack-env:disabled{filter:grayscale(.8);cursor:not-allowed}
+.stage5{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:16px 0 10px}
+.flip{position:relative;border:0;padding:0;background:none;cursor:pointer;width:160px;height:224px}
+.flip .backside{width:160px;height:224px;border-radius:12px;background:#1d2a44;display:grid;place-items:center}
+.flip .backside div{border:3px solid #f2c14e;border-radius:10px;width:82%;height:86%;display:grid;place-content:center;text-align:center;color:#fff;font-family:var(--f-display);font-weight:800;font-size:18px}
+.flip .backside em{font-style:normal;color:#f2c14e}
+.flip .tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--pen);color:#fff;font-weight:700;font-size:12px;padding:3px 10px;border-radius:999px;white-space:nowrap;z-index:2}
+.flip .tag.new{background:var(--ok)}
+.flip.glow .mc{box-shadow:0 0 0 3px #f2c14e,0 0 26px 4px rgba(242,193,78,.8);border-radius:12px}
+@media (prefers-reduced-motion:no-preference){.flip.revealed .mc{animation:pop .45s ease-out}}
+@keyframes pop{0%{transform:rotateY(90deg) scale(.9)}100%{transform:none}}
+.lob{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lob li{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:8px 12px}
+.lob li .btn{margin-left:auto}.lob .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.mini{font-size:12px;color:var(--ink-2)}
+.rules2 ol,.rules2 ul{padding-left:20px;line-height:1.5}.rules2 p{line-height:1.5;max-width:70ch}
+.cyc{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-weight:700}
+.cyc .s{color:var(--c)}
+.ztbl{border-collapse:collapse;width:100%;font-size:14px}.ztbl th,.ztbl td{text-align:left;vertical-align:top;padding:8px;border-top:1px solid var(--line)}
+.zdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:7px}
+.tscroll{overflow-x:auto}
+@media (max-width:860px){
+  .hero,.grid2{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.zpick2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #menu .tabs{position:fixed;left:0;right:0;bottom:0;margin:0;border-radius:0;justify-content:space-around;padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px));z-index:5;box-shadow:0 -8px 20px -12px rgba(0,0,0,.4)}
+  #menu .tabs button{padding:8px 6px;font-size:12.5px}
+  #menu .view{padding-bottom:90px}
+  #menu .who .mini{display:none}
+  .ztbl thead{display:none}.ztbl tr{display:block;padding:8px 0;border-top:1px solid var(--line)}.ztbl th,.ztbl td{display:block;border:0;padding:3px 0}
+}
+</style>
+<script src="config.js"></script>
+<script>window.LZ_SITE={};window.__fbReady=new Promise(r=>window.__fbResolve=r);setTimeout(()=>window.__fbResolve(null),15000);
+window.claude={use:n=>window.__fbReady.then(a=>a?a[n]||null:null)};</script>
+<script type="module" src="fb_site.js"></script>
+
+
+<div id="app">
+  <div id="stage" role="application" aria-label="Spielfeld Lehrerzimmer Arena">
+    <img class="bg" id="bg" alt="">
+    <div class="layer" id="slots"></div>
+    <div class="layer" id="field"></div>
+    <div class="layer" id="hud">
+      <div id="logo">Lehrer<em>zimmer</em><small>Arena</small></div>
+      <div class="chalk" id="chalk"></div>
+      <div id="turnflag"></div>
+      <div class="plate" id="plate1"></div>
+      <div class="plate" id="plate0"></div>
+      <button id="energy" aria-label="Energie anlegen"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M11.6 1.5 4 11.2h4.6L7.4 18.5 16 8.2h-4.8z"/></svg><span class="badge" id="enbadge">1</span></button>
+      <button id="endturn">Zug<br>beenden<small>Pausengong</small></button>
+      <div id="hand" aria-label="Deine Hand"></div>
+      <div id="toast" class="off" role="status" aria-live="polite"></div>
+      <div id="peek" class="off" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+
+<div id="menu" aria-label="Hauptmenü">
+  <div class="bar"><div class="brand">Lehrer<em>zimmer</em><small>Arena</small></div><nav class="tabs" aria-label="Bereiche"></nav><div class="who"></div></div>
+  <main class="view"></main>
+</div>
+<script>
+/* Lehrerzimmer – Spiellogik (wird von Simulation und Browser-Version gemeinsam genutzt)
+   Energie-Regel: 1 Energie pro Zug anlegen (offener Stapel, nicht im Deck).
+   Die für eine Attacke benutzte Energie verschwindet.
+   Version „Zweige“: Fraktionen nach den FOS-Zweigen mit Zweig-Vorteil und Joker (1× pro Spiel),
+   dazu Ideen aus Gwent: Neu ziehen, Heldenkarten und vier Sonderkarten. */
+const Engine=(()=>{
+/* ===== Kartendaten: FOS Holzkirchen =====
+   Fächer laut Fachschaftsseiten von fos-holzkirchen.de (Stand Oktober 2026).
+   Spielwerte stammen aus 22 getesteten Kartentypen (tpl), Namen und Attacken passen zum Fach. */
+const SUBJ={
+  MINT:{label:"Technik",v:"--mint"}, DEU:{label:"Deutsch",v:"--spr"}, FS:{label:"Int. Wirtschaft",v:"--kun"},
+  GES:{label:"Sozialwesen",v:"--ges"}, WIR:{label:"Wirtschaft",v:"--spo"},
+  SL:{label:"Schulleitung",v:"--sl"}, OFF:{label:"Fach folgt",v:"--off"}
+};
+const BEATS={MINT:"GES",GES:"WIR",WIR:"FS",FS:"DEU",DEU:"MINT"};
+const BEAT_REASON={MINT:"Daten statt Debatte",GES:"Erst die Ethik, dann der Gewinn",WIR:"Geld spricht jede Sprache",FS:"Die Welt spricht mehr als eine Sprache",DEU:"Textaufgaben"};
+const WEAKTO={}; Object.entries(BEATS).forEach(([a,b])=>WEAKTO[b]=a);
+/* Zweige (Fraktionen): Jede Fächergruppe gehört im Spiel zu dem Zweig, für den sie typisch ist.
+   Deutsch, Schulleitung und „Fach folgt“ sind Allgemeinbildung und passen in jeden Zweig. */
+const ZWEIGE={
+  MINT:{name:"Technik",perk:{name:"Werkstatt",text:"Legst du eine Technik-Lehrkraft auf die Bank, bekommt sie sofort 1 Energie (höchstens 2× pro Spiel)."},
+    joker:{name:"Prototyp",fx:"jAttach2",text:"Lege 2 Energie an eine deiner Lehrkräfte."}},
+  WIR:{name:"Wirtschaft und Verwaltung",perk:{name:"Doppelte Buchführung",text:"Du darfst pro Zug 2 Unterstützungskarten spielen statt 1. Hat eine gegnerische Lehrkraft Feierabend, ziehst du 1 Karte."},
+    joker:{name:"Investition",fx:"jInvest",text:"Lege 1 Energie an jede deiner Lehrkräfte und ziehe 1 Karte."}},
+  FS:{name:"Internationale Wirtschaft",perk:{name:"Weltoffen",text:"Der Rückzug deiner Lehrkräfte kostet 1 Energie weniger."},
+    joker:{name:"Headhunting",fx:"jGust",text:"Hole eine Lehrkraft von der gegnerischen Bank nach vorn. Sie wird aktiv."}},
+  GES:{name:"Sozialwesen",perk:{name:"Fürsorge",text:"Am Ende deines Zuges heilt deine aktive Lehrkraft 10 Schaden, wenn sie aus dem Sozialwesen ist."},
+    joker:{name:"Klassenfahrt",fx:"jHealAll",text:"Heile 20 Schaden bei jeder deiner Lehrkräfte."}}
+};
+const ZWEIG_KEYS=Object.keys(ZWEIGE);
+const zweigOf=c=>ZWEIGE[c.subj]?c.subj:null;
+
+const RULES={
+  attachPerTurn:1, firstTurnAttack:false, startEnergy:0, firstAttachBenchOnly:false,
+  benchMax:3, benchPerTurn:1, startHand:4, recycleSupports:true, winPoints:15, koPoints:5, deckTeachers:10, deckSupports:5, maxSupportCopies:2, supportsPerTurn:1, supportFromTurn:2,
+  weakBonus:10, maxDmg:50, maxTurns:90, examTurn:40, examBonus:20,
+  zweigMin:5, perks:true, jokers:true, jokerFromTurn:2, redraw:2, scorchDmg:20, healPerk:10, techMax:2, jokerHeal:20, spyDraw:3, medicEnergy:2
+};
+
+const TEMPLATES={"integral": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50, "fx": [{"t": "noRetreat"}]}]}, "voltmann": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "attachBench", "n": 1}]}, {"cost": 2, "dmg": 50}]}, "kolbe": {"hp": 70, "retreat": 2, "legend": false, "passiveKey": "armor10", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "fx": [{"t": "benchSplash", "n": 10}]}]}, "byte": {"hp": 70, "retreat": 0, "legend": false, "passiveKey": "backup", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healSelf", "n": 20}]}, {"cost": 2, "dmg": 50}]}, "komma": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "perOppEnergy", "n": 10}]}]}, "smalltalk": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "fx": [{"t": "draw", "n": 1}]}]}, "baguette": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healOne", "n": 30}]}, {"cost": 2, "dmg": 50, "fx": [{"t": "forceSwitch"}]}]}, "cicero": {"hp": 70, "retreat": 3, "legend": false, "passiveKey": "regen10", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "chronos": {"hp": 90, "retreat": 2, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "perKO", "n": 10}]}]}, "debatte": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 0, "fx": [{"t": "attachAny", "n": 2}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "gust"}]}]}, "atlas": {"hp": 80, "retreat": 2, "legend": false, "passiveKey": "onPlayAny", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "gnade": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": "comfort", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healAll", "n": 10}]}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "hpCompare", "n": 10}]}]}, "pfiff": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": "coach", "atks": [{"cost": 1, "dmg": 10, "fx": [{"t": "attachSelf", "n": 1}]}, {"cost": 2, "dmg": 50}]}, "zirkel": {"hp": 80, "retreat": 0, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50, "fx": [{"t": "freeSwitch"}]}]}, "voelker": {"hp": 80, "retreat": 2, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "snipe"}]}, {"cost": 2, "dmg": 50}]}, "urkunde": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30, "fx": [{"t": "selfDmg", "n": 10}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "drawOnKO", "n": 2}]}]}, "pinsel": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 0, "label": "?", "dice": true}, {"cost": 2, "dmg": 50, "fx": [{"t": "draw", "n": 1}]}]}, "dur": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 30, "label": "30+", "fx": [{"t": "perOwnBench", "n": 10}]}]}, "buehne": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "ton": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healSelf", "n": 10}]}, {"cost": 2, "dmg": 50}]}, "direktor": {"hp": 80, "retreat": 3, "legend": true, "passiveKey": "onPlayAny", "atks": [{"cost": 1, "dmg": 10, "fx": [{"t": "benchSplash", "n": 10}]}, {"cost": 2, "dmg": 50}]}, "stempel": {"hp": 70, "retreat": 0, "legend": true, "passiveKey": "onPlayTwo", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "draw", "n": 1}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "strip", "n": 1}]}]}};
+
+const PASSIVE_TEXT={
+  armor10:"Diese Lehrkraft erhält durch Attacken 10 Schaden weniger.",
+  backup:"Hat diese Lehrkraft Feierabend, geht ihre Energie nicht verloren: Sie wandert auf eine Lehrkraft auf deiner Bank.",
+  regen10:"Zu Beginn deines Zuges heilt diese Lehrkraft 10 Schaden.",
+  comfort:"Hat eine deiner anderen Lehrkräfte Feierabend, lege 1 Energie an diese Lehrkraft.",
+  coach:"Solange diese Lehrkraft im Spiel ist, kostet der Rückzug deiner anderen Lehrkräfte 1 Energie weniger.",
+  onPlaySelf:"Kommt diese Lehrkraft aus deiner Hand ins Spiel, lege 1 Energie an sie.",
+  onPlayAny:"Kommt diese Lehrkraft aus deiner Hand ins Spiel, lege 1 Energie an eine deiner Lehrkräfte.",
+  onPlayTwo:"Kommt diese Lehrkraft aus deiner Hand ins Spiel, lege 2 Energie beliebig verteilt an deine Lehrkräfte."
+};
+function fxText(a){
+  if(a.dice) return "Würfle: 1–2 → 10 Schaden, 3–4 → 30, 5–6 → 50.";
+  const t=[];
+  (a.fx||[]).forEach(f=>{
+    const m={
+      noRetreat:"Der Gegner darf seine aktive Lehrkraft in seinem nächsten Zug nicht auswechseln (weder durch Rückzug noch durch Karten oder Attacken).",
+      attachBench:"Lege 1 Energie an eine Lehrkraft auf deiner Bank.",
+      selfDmg:`Diese Lehrkraft erhält ${f.n} Schaden.`,
+      benchSplash:"Zusätzlich 10 Schaden an jeder Lehrkraft auf der gegnerischen Bank.",
+      healSelf:`Heile ${f.n} Schaden bei dieser Lehrkraft.`,
+      perOppEnergy:"+10 Schaden für jede Energie an der gegnerischen aktiven Lehrkraft.",
+      draw:"Ziehe 1 Karte.",
+      healOne:"Heile 30 Schaden bei einer deiner Lehrkräfte.",
+      forceSwitch:"Danach muss der Gegner seine aktive Lehrkraft gegen eine von seiner Bank tauschen (er wählt).",
+      perKO:"+10 Schaden für jede Lehrkraft, die in diesem Spiel schon Feierabend hat (beide Seiten).",
+      attachAny:"Lege 2 Energie an eine deiner Lehrkräfte.",
+      gust:"Hole vorher eine Lehrkraft von der gegnerischen Bank nach vorn. Sie wird aktiv und erhält den Schaden.",
+      healAll:"Heile 10 Schaden bei jeder deiner Lehrkräfte.",
+      hpCompare:"+10 Schaden, wenn die gegnerische Lehrkraft mehr KP übrig hat als diese.",
+      attachSelf:"Lege 1 Energie an diese Lehrkraft.",
+      freeSwitch:"Danach darfst du diese Lehrkraft kostenlos mit einer Lehrkraft auf deiner Bank tauschen.",
+      snipe:"Trifft eine gegnerische Lehrkraft deiner Wahl, auch auf der Bank.",
+      drawOnKO:"Hat die gegnerische Lehrkraft durch diese Attacke Feierabend, ziehe 2 Karten.",
+      perOwnBench:"+10 Schaden für jede Lehrkraft auf deiner Bank.",
+      strip:"Die gegnerische aktive Lehrkraft verliert 1 Energie."
+    }[f.t]; if(m) t.push(m);
+  });
+  return t.join(" ");
+}
+
+/* [id, Name, Gruppe, Fächer, Funktion, Kartentyp, Fähigkeitsname, Attacke 1, Attacke 2] */
+const TEACHERS=[
+ ["basche","Sally Basche","FS","Englisch · Spanisch","","voelker","","¡Vamos!","Speaking Test"],
+ ["barth","Lisa Barth","WIR","Englisch · Wirtschaft","","voelker","","Business Call","Verhandlungsgeschick"],
+ ["berkmann","Franziska Berkmann","GES","Mathematik · Pädagogik/Psychologie","","dur","Motivation","Lerntheorie","Gruppendynamik"],
+ ["blome","Bianca Blome","OFF","Fach folgt","","byte","Sicherungskopie","Wiederholung","Stegreifaufgabe"],
+ ["dengler","Stephanie Dengler","DEU","Deutsch · Wirtschaft","","zirkel","","Geschäftsbrief","Perspektivwechsel"],
+ ["draeger","Stine Draeger","WIR","Wirtschaft","","urkunde","Startkapital","Überstunden","Jahresabschluss"],
+ ["dreyer","Lydia Dreyer-Haslbeck","GES","Deutsch · ev. Religion","","gnade","Beistand","Nächstenliebe","Gewissensfrage"],
+ ["forster","Michael Forster","GES","Deutsch · Ethik","","voelker","","Trolley-Problem","Kategorischer Imperativ"],
+ ["fuchs","Jonathan Fuchs","MINT","Mathematik","","integral","","Kopfrechnen","Unangekündigte Ex"],
+ ["gerhardt","Mariska Gerhardt","MINT","Biologie · Chemie · Naturwissenschaften","","ton","","Zellteilung","Photosynthese"],
+ ["gerrer","Stefanie Gerrer","GES","Chemie · Politik und Gesellschaft · Naturwissenschaften","","kolbe","Schutzbrille","Redoxreaktion","Demonstration"],
+ ["gilbert","Katharina Gilbert","FS","Englisch","","pfiff","Exchange Program","Warm-up","Essay Writing"],
+ ["goerlich","Melanie Görlich","DEU","Deutsch · Englisch","","voltmann","","Übersetzung","Sprachgewalt"],
+ ["gremm","Daniela Gremm","WIR","Wirtschaft","","smalltalk","Kassensturz","Buchungssatz","Bilanzanalyse"],
+ ["hampel","Christina Hampel","OFF","Fach folgt","","ton","","Hausaufgaben-Check","Schulaufgabe"],
+ ["hanisch","Claudia Hanisch","MINT","Biologie · Chemie · Naturwissenschaften","Fachbetreuung Biologie, Chemie, Naturwissenschaften","kolbe","Laborkittel","Säuretest","Verpuffung"],
+ ["hautsch","Manuel Hautsch","FS","Englisch · kath. Religion · Wirtschaft","stellv. Fachschaftsleitung Wirtschaft","kolbe","Wörterbuch-Schild","Phrasal Verbs","Vocabulary Storm"],
+ ["hofmann","Christiane Hofmann","WIR","Englisch · Wirtschaft","","baguette","","Teambuilding","Umstrukturierung"],
+ ["hoffmann","Julia Hoffmann","MINT","Biologie · Chemie","","chronos","","Mikroskopieren","Natürliche Auslese"],
+ ["hohenleutner","Julia Hohenleutner","FS","Englisch","","zirkel","","Small Talk","Change the Topic"],
+ ["hohnke","Britta Hohnke","GES","Englisch · Geschichte","","chronos","","Jahreszahl abfragen","History Repeats"],
+ ["karrer","Susanne Karrer","SL","Pädagogik/Psychologie","Stellv. Schulleiterin","stempel","Vertretungsregelung","Elternbrief","Klassenkonferenz"],
+ ["kohlmaier","Monika Kohlmaier","FS","Englisch · Spanisch","Schulverwaltung · Ansprechpartnerin CAE","smalltalk","Zertifikat","Listening","CAE-Prüfung"],
+ ["koppitz","Eva-Maria Koppitz","WIR","Wirtschaft","Fachschaftsleitung Wirtschaft","debatte","","Investition","Feindliche Übernahme"],
+ ["kubis","Stefan Kubis","MINT","Physik · Technologie · Naturwissenschaften","","zirkel","","Hebelgesetz","Umschalter"],
+ ["laubmeier","Andrea Laubmeier","WIR","Mathematik · Wirtschaft","","cicero","Rücklagen","Prozentrechnung","Kostenfunktion"],
+ ["lederer","Michaela Lederer","WIR","Mathematik · Wirtschaft","","dur","Gut kalkuliert","Break-even","Arbeitsteilung"],
+ ["lehmann","Johanna Lehmann","DEU","Deutsch","","integral","","Rotstift","Unangekündigtes Diktat"],
+ ["loechinger","Bettina Löchinger","FS","Englisch · Spanisch","","baguette","","Siesta","Rollenspiel"],
+ ["maerz","Maria März","WIR","Wirtschaft · Politik und Gesellschaft","","komma","","Angebot und Nachfrage","Steuerprüfung"],
+ ["mayr","Christopher Mayr","DEU","Deutsch · Geschichte","","chronos","","Quellenarbeit","Aus der Geschichte lernen"],
+ ["meier","Richard Meier","MINT","Mathematik · Physik · Naturwissenschaften","","pinsel","","Stochastik","Gleichungssystem"],
+ ["melzer","Mathias Melzer","FS","Englisch · Spanisch","","buehne","","Conversation","Oral Exam"],
+ ["milak","Lejla Milak","GES","Deutsch · Geschichte · Politik und Gesellschaft","Fachbetreuung Geschichte, PuG","atlas","Fachbetreuung","Zeitstrahl","Epochenwandel"],
+ ["nadler","Julia Nadler","DEU","Deutsch · Geschichte · Politik und Gesellschaft","","ton","","Korrekturrand","Sachtextanalyse"],
+ ["niesz","Cornelia Niesz","MINT","Mathematik · Physik · Naturwissenschaften","komm. Fachbetreuung Physik/Technologie","komma","","Freier Fall","Energieerhaltung"],
+ ["ostgen","Maximilian Ostgen","GES","Wirtschaft · kath. Religion","","baguette","","Segen","Gleichnis"],
+ ["pagel","Andreas Pagel","GES","Deutsch · Geschichte · Politik und Gesellschaft","","debatte","","Wahlkampf","Misstrauensvotum"],
+ ["poeschl","Michelle Pöschl","FS","Englisch","","pinsel","","Spelling Bee","Reading Comprehension"],
+ ["prim","Alexander Prim","MINT","Mathematik · Physik","Fachschaftsleitung Mathematik","voltmann","","Ohmsches Gesetz","Hochspannung"],
+ ["ram","Fabian Ram","WIR","Deutsch · Wirtschaft","","gnade","Betriebsrat","Betriebsklima","Tarifverhandlung"],
+ ["reiter","Annika Reiter","MINT","Mathematik","","atlas","Formelsammlung","Bruchrechnen","Kurvendiskussion"],
+ ["romatka","Dr. Regine Romatka-Hort","DEU","Deutsch · Geschichte · Politik und Gesellschaft","","cicero","Zeitlose Klassiker","Zitat-Analyse","Klassikerlektüre"],
+ ["rostas","Stefan Rostas","MINT","Mathematik","","buehne","","Termumformung","Beweis durch Widerspruch"],
+ ["ruppelt","Mark Ruppelt","FS","Englisch · Geschichte","Ansprechpartner CAE","integral","","Grammar Check","Pop Quiz"],
+ ["schellenberger","Stefan Schellenberger","SL","Schulleitung","Schulleiter","direktor","Dienstbesprechung","Durchsage","Schulleiterentscheid"],
+ ["schaetzle","Korbinian Schätzle","DEU","Deutsch · Geschichte · Politik und Gesellschaft","komm. Fachbereichsleitung Deutsch","atlas","Fachbereichsleitung","Textanalyse","Erörterung"],
+ ["schellhorn","Gebhard Schellhorn","GES","Wirtschaft · Ethik","Schulbeauftragter für die fachpraktische Ausbildung","urkunde","Praktikumsplatz","Praxiseinsatz","Praktikumsbericht"],
+ ["schmidt","Kilian Schmidt","GES","Englisch · Pädagogik/Psychologie","","pfiff","Pausenaufsicht","Motivationsschub","Positive Verstärkung"],
+ ["schneider","Eva Schneider","DEU","Deutsch","","komma","","Kommasetzung","Interpretation"],
+ ["stein","Patrick Stein","DEU","Deutsch","","pinsel","","Kreatives Schreiben","Gedichtanalyse"],
+ ["stoiber","Dario Stoiber","WIR","Mathematik · Wirtschaft","Systembetreuung","byte","Cloud-Backup","Neustart","Systemupdate"],
+ ["trainer","Carina Trainer","WIR","Wirtschaft","","pfiff","Personalplanung","Zinseszins","Marktanalyse"],
+ ["unterlinner","Kathrin Unterlinner","OFF","Fach folgt","","buehne","","Tafelbild","Abfrage"],
+ ["weiser","Stephanie Weiser","DEU","Deutsch","","smalltalk","Lesestoff","Inhaltsangabe","Lektüre"],
+ ["ziliotto","Anne Ziliotto","FS","Englisch · Französisch","Fachschaftsleitung Englisch","dur","Bonjour!","Vocabulary","Sprachaustausch"]
+];
+const CARDS=TEACHERS.map(([id,name,subj,fach,role,tpl,pn,a1,a2])=>{
+  const T=TEMPLATES[tpl]; if(!T) throw new Error("Kartentyp fehlt: "+tpl);
+  const c={id,name,subj,fach,role,tpl,hp:T.hp,retreat:T.retreat,
+    atks:T.atks.map((a,k)=>Object.assign(JSON.parse(JSON.stringify(a)),{name:k?a2:a1,text:fxText(a)}))};
+  if(T.legend) c.legend=true;
+  if(T.passiveKey) c.passive={name:pn||"Fähigkeit",text:PASSIVE_TEXT[T.passiveKey],key:T.passiveKey};
+  return c;
+});
+const RECOMMENDED=["fuchs","prim","lehmann","schneider","koppitz","hofmann","melzer","gilbert","milak","dreyer"];
+const byId=id=>CARDS.find(c=>c.id===id);
+const SUPPORTS=[
+  {id:"maschine",name:"Pausenverkauf",text:"Lege 2 Energie an eine deiner Lehrkräfte.",fx:"attach2",flavor:"Die Schlange reicht bis zum Treppenhaus."},
+  {id:"thermos",name:"Thermoskanne",text:"Lege 1 Energie an eine deiner Lehrkräfte und ziehe 1 Karte.",fx:"attachDraw",flavor:"Selbst mitgebracht. Wie immer."},
+  {id:"pausenbrot",name:"Brotzeit",text:"Heile 20 Schaden bei einer deiner Lehrkräfte und lege 1 Energie an sie.",fx:"healAttach",flavor:"Brezn geht immer."},
+  {id:"vertretung",name:"Vertretungsplan",text:"Tausche deine aktive Lehrkraft kostenlos mit einer Lehrkraft auf deiner Bank.",fx:"switchAttach",flavor:"Kurz vor acht in WebUntis nachgeschaut."},
+  {id:"espresso",name:"Doppelstunde",text:"Lege 2 Energie an deine aktive Lehrkraft. Sie erhält 10 Schaden (dadurch hat sie nie Feierabend).",fx:"espresso",flavor:"90 Minuten am Stück."},
+  {id:"kasse",name:"Förderverein",text:"Lege je 1 Energie an bis zu 2 verschiedene deiner Lehrkräfte.",fx:"benchEach",flavor:"Danke für die Unterstützung!"},
+  {id:"konferenz",name:"Lehrerkonferenz",text:"Lege 1 Energie an jede deiner Lehrkräfte. Du darfst in diesem Zug keine weitere Energie anlegen.",fx:"allEach",flavor:"Punkt 17 von 43: Sonstiges."},
+  {id:"kaputt",name:"Kopierer kaputt",text:"Die gegnerische aktive Lehrkraft verliert bis zu 2 Energie. Ziehe 1 Karte.",fx:"strip1",flavor:"Papierstau in Fach 3."},
+  /* Sonderkarten nach Gwent-Vorbild */
+  {id:"feueralarm",name:"Feueralarm",text:"Die aktive Lehrkraft mit den meisten übrigen KP erhält 20 Schaden, egal auf welcher Seite. Bei Gleichstand beide.",fx:"scorch",flavor:"Alle raus, Sammelplatz Parkplatz.",gwent:"Versengen"},
+  {id:"hospitation",name:"Hospitation",text:"Die gegnerische aktive Lehrkraft bekommt 1 Energie. Du ziehst 3 Karten.",fx:"spy",flavor:"Hinten sitzt jemand und schreibt mit.",gwent:"Spion"},
+  {id:"krankmeldung",name:"Krankmeldung",text:"Lege deine aktive Lehrkraft unter dein Deck. Ihr Schaden und ihre Energie verfallen. Eine Lehrkraft von deiner Bank kommt nach vorn.",fx:"decoy",flavor:"Gute Besserung!",gwent:"Attrappe"},
+  {id:"nachpruefung",name:"Nachprüfung",text:"Lege eine Lehrkraft aus deinem Feierabend-Stapel ohne Schaden und mit 2 Energie auf deine Bank. Hat noch niemand Feierabend, ziehe stattdessen 2 Karten.",fx:"medic",flavor:"Zweite Chance im September.",gwent:"Sanitäter"}
+];
+const supById=id=>SUPPORTS.find(x=>x.id===id);
+const RECOMMENDED_SUPPORTS=["maschine","pausenbrot","thermos","vertretung","konferenz"];
+// Startdecks pro Zweig (getestet: 50–59 % gegen zufällige Computerdecks)
+const RECOMMENDED_Z={
+  MINT:["fuchs","reiter","hoffmann","hanisch","prim","gerhardt","kubis","lehmann","hautsch","romatka"],
+  WIR:["stoiber","barth","draeger","laubmeier","hofmann","gremm","maerz","reiter","gerhardt","schellenberger"],
+  FS:["gilbert","poeschl","ruppelt","kohlmaier","hohenleutner","ziliotto","barth","schaetzle","weiser","meier"],
+  GES:["schmidt","pagel","ostgen","milak","berkmann","hohnke","lehmann","barth","hautsch","kohlmaier"]};
+const RECOMMENDED_Z_SUPPORTS=["pausenbrot","thermos","feueralarm","hospitation","nachpruefung"];
+/* Energiekarten: alle wirken gleich (1 Energie), unterscheiden sich nur in Motiv und Seltenheit */
+const ENERGIES=[
+  {id:"kaffee",name:"Kaffee",rarity:"Gewöhnlich"},{id:"tee",name:"Tee",rarity:"Gewöhnlich"},
+  {id:"wasser",name:"Wasser",rarity:"Gewöhnlich"},{id:"schorle",name:"Apfelschorle",rarity:"Gewöhnlich"},
+  {id:"kakao",name:"Kakao",rarity:"Ungewöhnlich"},{id:"spezi",name:"Spezi",rarity:"Ungewöhnlich"},
+  {id:"mate",name:"Mate",rarity:"Selten"},{id:"energy",name:"Energy-Drink",rarity:"Selten"},
+  {id:"gold",name:"Goldene Kaffeetasse",rarity:"Ultra-selten"}
+];
+
+/* ---------- Helfer ---------- */
+function shuffle(a,rng=Math.random){for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+// Zufallsdeck für einen Zweig: 5–7 Lehrkräfte aus dem Zweig, der Rest beliebig (höchstens 1 Schulleitung)
+function randomDeck(rng=Math.random,R=RULES,zweig){
+  zweig=zweig||ZWEIG_KEYS[Math.floor(rng()*ZWEIG_KEYS.length)];
+  const nOwn=Math.min(R.deckTeachers,R.zweigMin+Math.floor(rng()*3));
+  const own=shuffle(CARDS.filter(c=>c.subj===zweig).map(c=>c.id),rng).slice(0,nOwn);
+  const out=own.slice(); let leg=0;
+  for(const id of shuffle(CARDS.filter(c=>c.subj!==zweig).map(c=>c.id),rng)){ if(out.length===R.deckTeachers) break; if(byId(id).legend){ if(leg) continue; leg++; } out.push(id); }
+  const pool=shuffle(SUPPORTS.flatMap(x=>Array(R.maxSupportCopies).fill(x.id)),rng);
+  for(let k=0;k<R.deckSupports;k++) out.push(pool[k]);
+  return out;
+}
+function mainZweig(ids){const n={};ids.map(byId).filter(Boolean).forEach(c=>{if(ZWEIGE[c.subj])n[c.subj]=(n[c.subj]||0)+1;});return ZWEIG_KEYS.slice().sort((a,b)=>(n[b]||0)-(n[a]||0))[0];}
+function deckProblems(ids,zweig,R=RULES){
+  const t=ids.filter(byId),s=ids.filter(id=>!byId(id)),out=[];
+  if(!ZWEIGE[zweig]) out.push("Wähle zuerst deinen Zweig.");
+  if(t.length!==R.deckTeachers) out.push(`Wähle genau ${R.deckTeachers} Lehrkräfte (gerade ${t.length}).`);
+  if(s.length!==R.deckSupports) out.push(`Wähle genau ${R.deckSupports} Unterstützungskarten (gerade ${s.length}).`);
+  if(new Set(t).size!==t.length) out.push("Jede Lehrkraft nur einmal.");
+  if(t.filter(id=>byId(id).legend).length>1) out.push("Höchstens 1 Karte der Schulleitung pro Deck.");
+  if(ZWEIGE[zweig]&&t.filter(id=>byId(id).subj===zweig).length<R.zweigMin) out.push(`Mindestens ${R.zweigMin} Lehrkräfte aus deinem Zweig ${ZWEIGE[zweig].name} (gerade ${t.filter(id=>byId(id).subj===zweig).length}).`);
+  SUPPORTS.forEach(x=>{if(s.filter(id=>id===x.id).length>R.maxSupportCopies) out.push(`„${x.name}“ höchstens ${R.maxSupportCopies}×.`);});
+  return out;
+}
+const isTeacher=i=>!!(i&&i.card);
+const teachersIn=list=>list.filter(isTeacher);
+let uidc=0;
+const mk=card=>({uid:++uidc,card,dmg:0,energy:0});
+const mkS=sup=>({uid:++uidc,sup});
+const hpLeft=i=>i.card.hp-i.dmg;
+const strongCost=i=>Math.max(...i.card.atks.map(a=>a.cost));
+const strongIdx=i=>{let k=0;i.card.atks.forEach((a,j)=>{if(a.cost>i.card.atks[k].cost)k=j;});return k;};
+const inPlay=p=>[p.active,...p.bench].filter(Boolean);
+function newPlayer(ids,rng,zweig){return {deck:shuffle(ids.map(id=>byId(id)?mk(byId(id)):mkS(supById(id))),rng),hand:[],active:null,bench:[],points:0,discard:[],used:[],ids:ids.slice(),zweig:zweig||mainZweig(ids),jokerUsed:false,perkUses:0};}
+
+function createGame(ids0,ids1,hooks={},opts={}){
+  const R=Object.assign({},RULES,opts.rules||{});
+  const rng=opts.rng||Math.random;
+  const Z=opts.zweig||[];
+  const G={R,rng,hooks,players:[newPlayer(ids0,rng,Z[0]),newPlayer(ids1,rng,Z[1])],cur:0,turn:0,starter:0,attachLeft:0,retreated:false,
+    noRetreat:[false,false],over:false,winner:null,reason:"",log:[],flash:new Set(),busy:true,sel:null,
+    human:opts.human??-1,names:opts.names||["Spieler 1","Spieler 2"],forceStarter:opts.starter,
+    stats:{maxHit:0,oneShots:0,oneShotsEarly:0,kos:0,firstKOTurn:null,attacks:0,strong:0,leadChanges:0,leader:-1,deficit:[0,0],
+           idleTurns:0,attached:0,helperKaffee:0,onPlayKaffee:0,supportKaffee:0,supportsPlayed:0,spent:0,lostOnKO:0,mulligans:0,deckOut:0,benchThisTurn:0,maxBenchTurn:0,multiBenchTurns:0,starterNoBenchT1:0,deadSupports:0,endByNoTeacher:0,comfort:0,maxHand:0,
+           jokers:0,jokerTurn:[],perkEnergy:0,perkDraw:0,perkHeal:0,scorch:0,scorchOwn:0,scorchKO:0,spy:0,decoy:0,revived:0,redraws:0}};
+  G.supportsLeft=0;
+  G.players.forEach(p=>p.perkFS=R.perks&&p.zweig==="FS");
+  return G;
+}
+const who=(G,pi)=>G.names[pi];
+const isHuman=(G,pi)=>Array.isArray(G.human)?G.human.includes(pi):pi===G.human;
+function log(G,msg,w){if(G.hooks.trace)G.hooks.trace(msg);G.log.unshift({msg,who:w});if(G.log.length>80)G.log.pop();}
+const render=G=>G.hooks.render&&G.hooks.render(G);
+const sleep=(G,ms)=>G.hooks.sleep?G.hooks.sleep(ms):Promise.resolve();
+function draw(p,n){let k=0;for(let i=0;i<n;i++){if(p.deck.length){p.hand.push(p.deck.pop());k++;}}return k;}
+function choose(G,pi,title,options,opt={}){
+  if(isHuman(G,pi)&&G.hooks.choose) return G.hooks.choose(G,title,options,opt,pi);
+  if(opt.aiSkip||!options.length) return Promise.resolve(null);
+  return Promise.resolve(options.slice().sort((a,b)=>b.score-a.score)[0].inst);
+}
+
+/* ---------- Kaffee ---------- */
+function addKaffee(G,pi,i,n,src){
+  if(!i||n<=0) return 0; i.energy+=n;
+  if(src==="helper") G.stats.helperKaffee+=n; if(src==="onPlay") G.stats.onPlayKaffee+=n; if(src==="support") G.stats.supportKaffee+=n;
+  log(G,`${i.card.name} bekommt ${n} Energie.`,pi); return n;
+}
+function spendKaffee(G,i,n){const k=Math.min(n,i.energy);i.energy-=k;G.stats.spent+=k;return k;}
+function canAttach(G,pi,i){
+  if(G.cur!==pi||G.over||G.attachLeft<=0) return false;
+  if(i&&G.turn===1&&G.R.firstAttachBenchOnly&&G.players[pi].active===i) return false;
+  return true;
+}
+function attach(G,pi,i){if(!canAttach(G,pi,i)||!i)return false;addKaffee(G,pi,i,1);G.attachLeft--;G.stats.attached++;return true;}
+function needScore(i){const d=strongCost(i)-i.energy;return d>0?20-d:-5;}
+async function onPlay(G,pi,i){
+  const k=i.card.passive?.key, p=G.players[pi], nm=i.card.passive?.name;
+  if(k==="onPlaySelf"){log(G,`${i.card.name}: ${nm}!`,pi);addKaffee(G,pi,i,1,"onPlay");}
+  if(k==="onPlayAny"){
+    const t=await choose(G,pi,`${nm} (${i.card.name}): Welche Lehrkraft bekommt 1 Energie?`,inPlay(p).map(x=>({inst:x,score:needScore(x)+(x===p.active?2:0)})));
+    if(t){log(G,`${i.card.name}: ${nm}!`,pi);addKaffee(G,pi,t,1,"onPlay");}
+  }
+  if(k==="onPlayTwo"){
+    log(G,`${i.card.name}: ${nm}!`,pi);
+    for(let n=0;n<2;n++){const t=await choose(G,pi,`${nm}: Wer bekommt Energie ${n+1} von 2?`,inPlay(p).map(x=>({inst:x,score:needScore(x)+(x===p.active?2:0)})));if(t)addKaffee(G,pi,t,1,"onPlay");}
+  }
+  render(G);
+}
+
+/* ---------- Unterstützungskarten ---------- */
+// Heldenkarten (Gwent): Gegnerische Unterstützungskarten und Joker wirken nicht auf die Schulleitung
+const hero=i=>!!(i&&i.card&&i.card.legend);
+function scorchTargets(G){
+  const c=G.players.map((p,pi)=>({pi,i:p.active})).filter(x=>x.i&&!hero(x.i));
+  if(!c.length) return [];
+  const top=Math.max(...c.map(x=>hpLeft(x.i)));
+  return c.filter(x=>hpLeft(x.i)===top);
+}
+function canPlaySupport(G,pi,i){
+  if(G.cur!==pi||G.over||G.supportsLeft<=0||!i||!i.sup||!G.players[pi].hand.includes(i)) return false;
+  if(G.R.supportFromTurn&&G.turn<G.R.supportFromTurn) return false;
+  const p=G.players[pi],f=i.sup.fx;
+  if(f==="switchAttach") return p.bench.length>0&&!G.noRetreat[pi];
+  if(f==="benchEach") return inPlay(p).length>0;
+  if(f==="espresso") return !!p.active;
+  if(f==="strip1") return !!(G.players[1-pi].active&&G.players[1-pi].active.energy>0&&!hero(G.players[1-pi].active));
+  if(f==="draw2") return p.deck.length>0;
+  if(f==="scorch") return scorchTargets(G).length>0;
+  if(f==="spy") return p.deck.length>0;
+  if(f==="decoy") return !!p.active&&p.bench.length>0&&!G.noRetreat[pi];
+  if(f==="medic") return p.discard.length>0?p.bench.length<G.R.benchMax:p.deck.length>0;
+  return inPlay(p).length>0;
+}
+async function playSupport(G,pi,i){
+  if(!canPlaySupport(G,pi,i)) return false;
+  const p=G.players[pi],op=G.players[1-pi],f=i.sup.fx;
+  p.hand.splice(p.hand.indexOf(i),1); p.used.push(i); G.supportsLeft--; G.stats.supportsPlayed++;
+  log(G,`${who(G,pi)} spielt „${i.sup.name}“.`,pi);
+  const pick=async(title,list,score)=>list.length===1?list[0]:await choose(G,pi,title,list.map(x=>({inst:x,score:score(x)})));
+  if(f==="attach2"){const t=await pick(`${i.sup.name}: Wer bekommt 2 Energie?`,inPlay(p),x=>needScore(x)+(x===p.active?3:0));addKaffee(G,pi,t,2,"support");}
+  if(f==="attachDraw"){const t=await pick(`${i.sup.name}: Wer bekommt 1 Energie?`,inPlay(p),x=>needScore(x)+(x===p.active?3:0));addKaffee(G,pi,t,1,"support");if(draw(p,1))log(G,`${who(G,pi)}: +1 Karte.`,pi);}
+  if(f==="healAttach"){const t=await pick(`${i.sup.name}: Wer wird versorgt?`,inPlay(p),x=>Math.min(x.dmg,20)+needScore(x));heal(G,pi,t,20);addKaffee(G,pi,t,1,"support");}
+  if(f==="switchAttach"){const t=await pick(`${i.sup.name}: Wer kommt nach vorn?`,p.bench,x=>hpLeft(x)+x.energy*15);log(G,`${p.active.card.name} wird vertreten. ${t.card.name} kommt nach vorn.`,pi);swapActive(p,t);}
+  if(f==="espresso"){const a=p.active;addKaffee(G,pi,a,2,"support");const x=Math.min(10,Math.max(0,hpLeft(a)-10));if(x){a.dmg+=x;G.flash.add(a.uid);log(G,`${i.sup.name}: ${a.card.name} erhält ${x} Schaden.`,pi);}}
+  if(f==="benchEach"){const all=inPlay(p);
+    if(all.length<=2) all.forEach(t=>addKaffee(G,pi,t,1,"support"));
+    else{const sc=x=>needScore(x)+(x===p.active?3:0);const t1=await pick(`${i.sup.name}: 1. Lehrkraft`,all,sc);const t2=await pick(`${i.sup.name}: 2. Lehrkraft (eine andere)`,all.filter(x=>x!==t1),sc);addKaffee(G,pi,t1,1,"support");addKaffee(G,pi,t2,1,"support");}}
+  if(f==="allEach"){inPlay(p).forEach(t=>addKaffee(G,pi,t,1,"support"));G.attachLeft=0;}
+  if(f==="draw2"){const k=draw(p,G.R.konferenzDraw||2);log(G,`${who(G,pi)}: +${k} Karten.`,pi);if(G.R.konferenzKaffee&&p.active)addKaffee(G,pi,p.active,1,"support");}
+  if(f==="strip1"){const t=op.active;const n=Math.min(2,t.energy);t.energy-=n;log(G,`${t.card.name} verliert ${n} Energie.`,pi);if(draw(p,1))log(G,`${who(G,pi)}: +1 Karte.`,pi);}
+  if(f==="spy"){G.stats.spy++;if(op.active&&!hero(op.active))addKaffee(G,1-pi,op.active,1,"support");const k=draw(p,G.R.spyDraw);log(G,`${who(G,pi)}: +${k} Karten.`,pi);}
+  if(f==="decoy"){const a=p.active;const t=await pick(`${i.sup.name}: Wer kommt nach vorn?`,p.bench,x=>hpLeft(x)+x.energy*15);
+    p.bench.splice(p.bench.indexOf(t),1);p.active=t;a.dmg=0;a.energy=0;p.deck.unshift(a);G.stats.decoy++;
+    log(G,`${a.card.name} meldet sich krank und kommt unter das Deck. ${t.card.name} kommt nach vorn.`,pi);}
+  if(f==="medic"&&!p.discard.length){const k=draw(p,2);log(G,`Noch niemand im Feierabend: ${who(G,pi)} zieht ${k} Karten.`,pi);}
+  else if(f==="medic"){const t=await pick(`${i.sup.name}: Wer bekommt eine zweite Chance?`,p.discard,x=>x.card.hp+x.card.atks[1].dmg);
+    p.discard.splice(p.discard.indexOf(t),1);t.dmg=0;t.energy=0;p.bench.push(t);G.stats.revived++;addKaffee(G,pi,t,G.R.medicEnergy,"support");
+    log(G,`${t.card.name} besteht die Nachprüfung und kommt auf die Bank.`,pi);}
+  if(f==="scorch"){const ts=scorchTargets(G);G.stats.scorch++;
+    ts.forEach(({pi:q,i:t})=>{t.dmg+=G.R.scorchDmg;G.flash.add(t.uid);if(q===pi)G.stats.scorchOwn++;log(G,`Feueralarm! ${t.card.name} erhält ${G.R.scorchDmg} Schaden.`,pi);});
+    render(G);const ko=resolveKOs(G);G.stats.scorchKO+=ko.length;if(ko.length&&await promotions(G)) return true;}
+  render(G); return true;
+}
+function aiSupportScore(G,pi,i){
+  const p=G.players[pi],op=G.players[1-pi],f=i.sup.fx,a=p.active;
+  const need=x=>Math.max(0,strongCost(x)-x.energy);
+  const anyNeed=inPlay(p).some(x=>need(x)>0);
+  if(f==="attach2") return anyNeed?30:5;
+  if(f==="attachDraw") return 18+(anyNeed?8:0);
+  if(f==="healAttach") return Math.max(...inPlay(p).map(x=>Math.min(x.dmg,20)))+8;
+  if(f==="allEach") return inPlay(p).filter(x=>need(x)>0).length*12-(G.attachLeft>0?12:0);
+  if(f==="switchAttach"){if(!p.bench.length||!a)return -1;const b=p.bench.slice().sort((x,y)=>hpLeft(y)-hpLeft(x))[0];return hpLeft(a)<=30&&hpLeft(b)>hpLeft(a)?35:-1;}
+  if(f==="espresso") return a&&hpLeft(a)>30&&need(a)>0?26:-1;
+  if(f==="benchEach") return Math.min(2,inPlay(p).filter(x=>need(x)>0).length)*13;
+  if(f==="draw2") return teachersIn(p.hand).length===0&&p.bench.length<2?28:p.hand.length<=1?16:4;
+  if(f==="strip1") return op.active&&op.active.energy>=2?28:op.active&&op.active.energy?12:-1;
+  if(f==="scorch") return scorchTargets(G).reduce((v,{pi:q,i:t})=>{const ko=G.R.scorchDmg>=hpLeft(t);return v+(q===pi?-(30+(ko?80:0)):30+(ko?50:0));},0);
+  if(f==="spy"){const o=op.active;const gives=o&&!hero(o)&&strongCost(o)-o.energy===1;return (p.hand.length<=2?24:12)-(gives?14:0);}
+  if(f==="decoy") return a&&p.bench.length&&hpLeft(a)<=30&&a.dmg>=40?34-a.energy*6:-1;
+  if(f==="medic") return p.discard.length?(p.bench.length<2?26:14):(teachersIn(p.hand).length===0&&p.bench.length<2?24:16);
+  return 0;
+}
+
+/* ---------- Regeln ---------- */
+async function benchFromHand(G,pi,i){
+  const p=G.players[pi]; if(!isTeacher(i)||p.bench.length>=G.R.benchMax||!p.hand.includes(i)) return false;
+  if(G.turn>0&&G.benchLeft<=0) return false;
+  p.hand.splice(p.hand.indexOf(i),1); p.bench.push(i);
+  if(G.turn>0){G.benchLeft--;G.stats.benchThisTurn++;if(G.stats.benchThisTurn>G.stats.maxBenchTurn)G.stats.maxBenchTurn=G.stats.benchThisTurn;if(G.stats.benchThisTurn===2)G.stats.multiBenchTurns++;}
+  log(G,`${who(G,pi)}: ${i.card.name} kommt auf die Bank.`,pi);
+  if(G.R.perks&&p.zweig==="MINT"&&i.card.subj==="MINT"&&p.perkUses<G.R.techMax){log(G,`Werkstatt (Technik): ${i.card.name} startet mit 1 Energie.`,pi);addKaffee(G,pi,i,1,"zweig");G.stats.perkEnergy++;p.perkUses++;}
+  await onPlay(G,pi,i); return true;
+}
+function canBench(G,pi,i){const p=G.players[pi];return !!(isTeacher(i)&&p.hand.includes(i)&&p.bench.length<G.R.benchMax&&G.cur===pi&&!G.over&&(G.turn===0||G.benchLeft>0));}
+function retreatCost(p,i){let c=i.card.retreat;if(inPlay(p).some(o=>o!==i&&o.card.passive?.key==="coach"))c--;if(p.perkFS)c--;return Math.max(0,c);}
+function canRetreat(G,pi){const p=G.players[pi];return !!(G.cur===pi&&!G.over&&p.active&&p.bench.length&&!G.retreated&&!G.noRetreat[pi]&&p.active.energy>=retreatCost(p,p.active));}
+function swapActive(p,t){const k=p.bench.indexOf(t);p.bench[k]=p.active;p.active=t;}
+function doRetreat(G,pi,t){const p=G.players[pi];const c=retreatCost(p,p.active);spendKaffee(G,p.active,c);
+  log(G,`${p.active.card.name} zieht sich zurück${c?` (${c} Energie verbraucht)`:""}. ${t.card.name} kommt nach vorn.`,pi);swapActive(p,t);G.retreated=true;}
+function canAttack(G,pi,k){const p=G.players[pi];const a=p.active;if(!a||G.cur!==pi||G.over)return false;if(G.turn===1&&!G.R.firstTurnAttack)return false;return a.energy>=a.card.atks[k].cost;}
+function calcDmg(G,src,tgt,n,weak=true){let d=n;if(weak&&d>0&&BEATS[src.card.subj]===tgt.card.subj)d+=G.R.weakBonus;if(tgt.card.passive?.key==="armor10")d=Math.max(0,d-10);return d;}
+const inExam=G=>!!G.R.examTurn&&G.turn>=G.R.examTurn;
+function baseDamage(G,pi,a,atk,roll){
+  const me=G.players[pi],op=G.players[1-pi];const fx=atk.fx||[];const has=t=>fx.find(f=>f.t===t);let f;
+  let d=atk.dmg||0;
+  if(atk.dice) d=roll==null?30:(roll<=2?10:roll<=4?30:50);
+  if(f=has("perOppEnergy")) d+=f.n*(op.active?op.active.energy:0);
+  if(f=has("perKO")) d+=f.n*(me.discard.length+op.discard.length);
+  if((f=has("hpCompare"))&&op.active&&hpLeft(op.active)>hpLeft(a)) d+=f.n;
+  if(f=has("perOwnBench")) d+=f.n*me.bench.length;
+  d=Math.min(d,G.R.maxDmg);
+  if(inExam(G)&&d>0) d+=G.R.examBonus;
+  return d;
+}
+function heal(G,pi,i,n){const h=Math.min(n,i.dmg);if(h>0){i.dmg-=h;log(G,`${i.card.name} heilt ${h}.`,pi);}}
+
+function dealDamage(G,pi,src,tgt,n,weak,track){
+  const d=calcDmg(G,src,tgt,n,weak);
+  if(track) track.push({tgt,before:tgt.dmg});
+  tgt.dmg+=d; G.flash.add(tgt.uid); if(d>G.stats.maxHit)G.stats.maxHit=d;
+  const w=weak&&n>0&&BEATS[src.card.subj]===tgt.card.subj;
+  log(G,`${tgt.card.name} erhält ${d} Schaden${w?" (Schwäche +"+G.R.weakBonus+")":""}${tgt.card.passive?.key==="armor10"?" (Schutzbrille −10)":""}.`,pi);
+}
+function trackLead(G){
+  const [a,b]=G.players.map(p=>p.points); const l=a>b?0:b>a?1:-1;
+  if(l!==-1&&G.stats.leader!==-1&&l!==G.stats.leader) G.stats.leadChanges++;
+  if(l!==-1) G.stats.leader=l;
+  G.stats.deficit[0]=Math.max(G.stats.deficit[0],b-a); G.stats.deficit[1]=Math.max(G.stats.deficit[1],a-b);
+}
+function knockOut(G,pi,i){
+  const p=G.players[pi],o=G.players[1-pi];
+  o.points+=G.R.koPoints;
+  if(i===p.active)p.active=null; else p.bench.splice(p.bench.indexOf(i),1);
+  if(i.card.passive?.key==="backup"&&p.bench.length&&i.energy){
+    const t=p.bench.slice().sort((a,b)=>needScore(b)-needScore(a))[0];t.energy+=i.energy;log(G,`${i.card.passive.name}: ${i.energy} Energie wandert zu ${t.card.name}.`,pi);
+  } else { G.stats.lostOnKO+=i.energy; }
+  const tr=inPlay(p).find(x=>x.card.passive?.key==="comfort");
+  if(tr){tr.energy+=1;G.stats.helperKaffee++;G.stats.comfort++;log(G,`${tr.card.name} (${tr.card.passive.name}): +1 Energie.`,pi);}
+  i.energy=0; p.discard.push(i); G.stats.kos++; if(G.stats.firstKOTurn==null)G.stats.firstKOTurn=G.turn;
+  log(G,`${i.card.name} hat Feierabend! ${who(G,1-pi)} +${G.R.koPoints} Punkte.`,"sys");
+  if(G.R.perks&&o.zweig==="WIR"&&draw(o,1)){G.stats.perkDraw++;log(G,`Doppelte Buchführung (Wirtschaft): ${who(G,1-pi)} zieht 1 Karte.`,1-pi);}
+  trackLead(G);
+}
+function resolveKOs(G){const out=[];G.players.forEach((p,pi)=>inPlay(p).forEach(i=>{if(i.dmg>=i.card.hp){knockOut(G,pi,i);out.push(i);}}));return out;}
+function gameOver(G,winner,reason){G.stats.deadSupports=G.players.reduce((s,p)=>s+p.hand.filter(x=>x.sup).length,0);G.over=true;G.busy=true;G.winner=winner;G.reason=reason||"";render(G);G.hooks.gameOver&&G.hooks.gameOver(G);return true;}
+function checkWin(G){for(const pi of [G.cur,1-G.cur]) if(G.players[pi].points>=G.R.winPoints) return gameOver(G,pi);return false;}
+async function promotions(G){
+  if(checkWin(G)) return true;
+  for(const pi of [1-G.cur,G.cur]){
+    const p=G.players[pi];
+    if(!p.active){
+      const fromHand=!p.bench.length; const pool=fromHand?teachersIn(p.hand):p.bench;
+      if(!pool.length){G.stats.endByNoTeacher++;return gameOver(G,1-pi,`${who(G,pi)}: keine Lehrkraft mehr, die nach vorn kann.`);}
+      render(G);
+      const t=await choose(G,pi,"Deine aktive Lehrkraft hat Feierabend. Wer kommt nach vorn?",pool.map(i=>({inst:i,score:hpLeft(i)+i.energy*20})));
+      const src=fromHand?p.hand:p.bench; src.splice(src.indexOf(t),1); p.active=t; log(G,`${t.card.name} kommt nach vorn.`,pi);
+      if(G.R.trostKaffee){t.energy+=G.R.trostKaffee;log(G,`Trost-Kaffee: ${t.card.name} bekommt ${G.R.trostKaffee} Kaffee.`,pi);}
+      if(fromHand) await onPlay(G,pi,t);
+    }
+  }
+  render(G); return false;
+}
+
+async function startGame(G){
+  G.players.forEach((p,pi)=>{
+    draw(p,G.R.startHand);
+    while(!teachersIn(p.hand).length){p.deck.push(...p.hand);p.hand=[];shuffle(p.deck,G.rng);draw(p,G.R.startHand);G.stats.mulligans++;log(G,`${who(G,pi)} hat keine Lehrkraft auf der Hand und mischt neu.`,pi);}
+  });
+  // Neu ziehen (Gwent): bis zu 2 Handkarten unter das Deck legen und dafür neue ziehen
+  for(const pi of [0,1]){
+    const p=G.players[pi]; let n=0;
+    while(n<G.R.redraw&&p.deck.length){
+      let x;
+      if(isHuman(G,pi)){render(G);x=await choose(G,pi,`Neu ziehen: Tippe eine Karte an, die du tauschen willst (noch ${G.R.redraw-n}×).`,p.hand.map(i=>({inst:i,score:0})),{optional:"Hand behalten"});}
+      else x=aiRedrawPick(G,p);
+      if(!x) break;
+      p.hand.splice(p.hand.indexOf(x),1); p.deck.unshift(x); draw(p,1); n++; G.stats.redraws++;
+    }
+    if(n) log(G,`${who(G,pi)} tauscht ${n} Karte${n>1?"n":""}.`,pi);
+    while(!teachersIn(p.hand).length){p.deck.push(...p.hand);p.hand=[];shuffle(p.deck,G.rng);draw(p,G.R.startHand);G.stats.mulligans++;log(G,`${who(G,pi)} hat keine Lehrkraft auf der Hand und mischt neu.`,pi);}
+  }
+  G.players.forEach((p,pi)=>{if(!isHuman(G,pi)){const t=teachersIn(p.hand).sort((a,b)=>b.card.hp-a.card.hp)[0];p.hand.splice(p.hand.indexOf(t),1);p.active=t;}});
+  render(G);
+  for(const hp of [0,1]){if(!isHuman(G,hp))continue;const p=G.players[hp];const t=await choose(G,hp,"Wähle deine erste aktive Lehrkraft",teachersIn(p.hand).map(i=>({inst:i,score:0})));p.hand.splice(p.hand.indexOf(t),1);p.active=t;}
+  G.cur=G.starter=(G.forceStarter!=null?G.forceStarter:(G.rng()<.5?0:1));
+  for(const pi of [0,1]){const p=G.players[pi];if(G.R.startEnergy)p.active.energy+=G.R.startEnergy;await onPlay(G,pi,p.active);}
+  if(G.R.starterExtraCard){const k=draw(G.players[G.cur],G.R.starterExtraCard);if(k)log(G,`${who(G,G.cur)} zieht als Startspieler ${k} Karte extra.`,G.cur);}
+  if(G.R.secondExtraCard){const k=draw(G.players[1-G.cur],G.R.secondExtraCard);if(k)log(G,`${who(G,1-G.cur)} zieht als zweiter Spieler ${k} Karte extra.`,1-G.cur);}
+  if(G.R.secondStart){const p=G.players[1-G.cur];p.active.energy+=G.R.secondStart;log(G,`Frühstückskaffee: ${p.active.card.name} (${who(G,1-G.cur)}) startet mit ${G.R.secondStart} Kaffee.`,1-G.cur);}
+  log(G,`Startspieler: ${who(G,G.cur)}.${G.R.firstTurnAttack?"":" Im allerersten Zug wird nicht angegriffen."}`,"sys");
+  G.turn=1; await startTurn(G);
+}
+async function startTurn(G){
+  const p=G.players[G.cur]; G.retreated=false; G.sel=null; G.supportsLeft=G.R.supportsPerTurn+((G.R.comebackSupport&&p.points<G.players[1-G.cur].points)?1:0)+(G.R.perks&&p.zweig==="WIR"?1:0); G.attachLeft=(G.turn===1&&G.R.firstTurnAttach!=null)?G.R.firstTurnAttach:G.R.attachPerTurn;
+  log(G,`Zug ${G.turn} · ${who(G,G.cur)}`,"sys");
+  if(G.R.examTurn&&G.turn===G.R.examTurn) log(G,`Prüfungsphase! Ab jetzt machen alle Attacken +${G.R.examBonus} Schaden.`,"sys");
+  if(!(G.turn===1&&G.R.noFirstDraw)){
+    if(!p.deck.length&&G.R.recycleSupports&&p.used.length){p.deck=shuffle(p.used,G.rng);p.used=[];log(G,`${who(G,G.cur)}: Ziehstapel leer, die gespielten Unterstützungskarten werden neu gemischt.`,G.cur);G.stats.recycled=(G.stats.recycled||0)+1;}
+    if(!p.deck.length) G.stats.deckOut++; draw(p,1);
+  }
+  G.stats.benchThisTurn=0; G.benchLeft=G.R.benchPerTurn??99;
+  if(G.R.firstTurnBench&&(G.turn===1||(G.turn===2&&!G.R.firstTurnBenchStarterOnly))) G.benchLeft=G.R.firstTurnBench;
+  if(p.hand.length>G.stats.maxHand) G.stats.maxHand=p.hand.length;
+  inPlay(p).forEach(i=>{if(i.card.passive?.key==="regen10"&&i.dmg>0){const h=Math.min(10,i.dmg);i.dmg-=h;log(G,`${i.card.name} heilt ${h} (${i.card.passive.name}).`,G.cur);}});
+  if(!isHuman(G,G.cur)){G.busy=true;render(G);await aiTurn(G);}
+  else {G.busy=false;render(G);}
+}
+async function endTurn(G){
+  if(G.over) return;
+  const p=G.players[G.cur];
+  const g=p.bench.find(i=>i.card.passive?.key==="benchHeal");
+  if(g&&p.active&&p.active.dmg>0){const h=Math.min(10,p.active.dmg);p.active.dmg-=h;log(G,`${g.card.name} heilt ${p.active.card.name} um ${h} (Seelsorge).`,G.cur);}
+  if(G.R.perks&&p.zweig==="GES"&&p.active&&p.active.dmg>0&&p.active.card.subj==="GES"){const h=Math.min(G.R.healPerk,p.active.dmg);p.active.dmg-=h;G.stats.perkHeal+=h;log(G,`Fürsorge (Sozialwesen): ${p.active.card.name} heilt ${h}.`,G.cur);}
+  G.noRetreat[G.cur]=false;
+  if(G.turn>=G.R.maxTurns){gameOver(G,-1,"Zeit abgelaufen: unentschieden.");return;}
+  G.turn++; G.cur=1-G.cur; G.busy=true;
+  render(G); await sleep(G,250);
+  await startTurn(G);
+}
+
+async function doAttack(G,pi,k){
+  const me=G.players[pi],op=G.players[1-pi],a=me.active,atk=a.card.atks[k];
+  G.busy=true;G.sel=null;
+  spendKaffee(G,a,atk.cost);
+  G.stats.attacks++; if(k===strongIdx(a)) G.stats.strong++;
+  log(G,`${a.card.name} setzt „${atk.name}“ ein (${atk.cost} Energie verbraucht).`,pi); render(G); await sleep(G,350);
+  const fx=atk.fx||[]; const has=t=>fx.find(f=>f.t===t); let f; const track=[];
+  if(has("gust")&&op.bench.length){
+    const t=await choose(G,pi,`${atk.name}: Welche gegnerische Lehrkraft holst du nach vorn?`,op.bench.map(i=>({inst:i,score:(calcDmg(G,a,i,baseDamage(G,pi,a,atk))>=hpLeft(i)?1000:0)-hpLeft(i)+i.energy*10})));
+    swapActive(op,t); log(G,`${t.card.name} muss nach vorn.`,pi);
+  }
+  let r=null;
+  if(atk.dice){r=1+Math.floor(G.rng()*6);}
+  const dmg=baseDamage(G,pi,a,atk,r);
+  if(atk.dice) log(G,`Gewürfelt: ${r}, also ${dmg} Schaden.`,pi);
+  let target=op.active;
+  if(has("snipe")) target=await choose(G,pi,`${atk.name}: Wen triffst du?`,inPlay(op).map(i=>({inst:i,score:(calcDmg(G,a,i,dmg)>=hpLeft(i)?1000+i.energy*20:0)-hpLeft(i)+(i===op.active?5:0)})));
+  if(dmg>0&&target) dealDamage(G,pi,a,target,dmg,true,track);
+  if(f=has("benchSplash")) op.bench.forEach(i=>dealDamage(G,pi,a,i,f.n,false,track));
+  if(f=has("selfDmg")){a.dmg+=f.n;G.flash.add(a.uid);log(G,`${a.card.name} erhält ${f.n} Schaden durch den Rückstoß.`,pi);}
+  if(f=has("healSelf")) heal(G,pi,a,f.n);
+  if(f=has("healAll")) inPlay(me).forEach(i=>heal(G,pi,i,f.n));
+  if(f=has("healOne")){const o=inPlay(me).filter(i=>i.dmg>0);if(o.length){const t=await choose(G,pi,`${atk.name}: Welche Lehrkraft heilst du?`,o.map(i=>({inst:i,score:Math.min(i.dmg,f.n)*10+(i===me.active?1:0)})));heal(G,pi,t,f.n);}}
+  if(f=has("draw")){if(draw(me,f.n))log(G,`${who(G,pi)}: +${f.n} Karte.`,pi);}
+  if(f=has("attachSelf")) addKaffee(G,pi,a,f.n,"helper");
+  if((f=has("attachBench"))&&me.bench.length){const t=await choose(G,pi,`${atk.name}: Welche Lehrkraft auf deiner Bank bekommt 1 Energie?`,me.bench.map(i=>({inst:i,score:needScore(i)})));addKaffee(G,pi,t,f.n,"helper");}
+  if(f=has("attachAny")){const t=await choose(G,pi,`${atk.name}: Welche Lehrkraft bekommt 2 Energie?`,inPlay(me).map(i=>({inst:i,score:needScore(i)})));addKaffee(G,pi,t,f.n,"helper");}
+  if(has("noRetreat")){G.noRetreat[1-pi]=true;log(G,"Der Gegner darf seine aktive Lehrkraft nächsten Zug nicht auswechseln.",pi);}
+  if((f=has("strip"))&&op.active&&op.active.energy){const n=Math.min(f.n,op.active.energy);op.active.energy-=n;log(G,`${op.active.card.name} verliert ${n} Energie.`,pi);}
+  const front=op.active;
+  render(G); await sleep(G,500);
+  const ko=resolveKOs(G);
+  track.forEach(t=>{if(t.before===0&&ko.includes(t.tgt)){G.stats.oneShots++;if(!inExam(G))G.stats.oneShotsEarly++;}});
+  if((f=has("drawOnKO"))&&ko.includes(front)){if(draw(me,f.n))log(G,`${atk.name}: ${who(G,pi)} +${f.n} Karten.`,pi);}
+  if(await promotions(G)) return;
+  if(has("forceSwitch")&&op.active===front&&op.bench.length){
+    const t=await choose(G,1-pi,`${atk.name}: Welche deiner Lehrkräfte kommt nach vorn?`,op.bench.map(i=>({inst:i,score:hpLeft(i)+i.energy*15})));
+    swapActive(op,t);log(G,`${t.card.name} muss nach vorn.`,pi);
+  }
+  if(has("freeSwitch")&&me.active===a&&me.bench.length&&!G.noRetreat[pi]){
+    const low=hpLeft(a)<=40;
+    const t=await choose(G,pi,`${atk.name}: Mit wem tauschst du?`,me.bench.map(i=>({inst:i,score:hpLeft(i)+i.energy*10})),{optional:"Nicht tauschen",aiSkip:!low});
+    if(t){swapActive(me,t);log(G,`${t.card.name} wechselt nach vorn.`,pi);}
+  }
+  render(G); await sleep(G,300);
+  await endTurn(G);
+}
+
+/* ---------- Zweig-Joker (Anführer, 1× pro Spiel) ---------- */
+const jokerOf=p=>ZWEIGE[p.zweig].joker;
+function canJoker(G,pi){
+  const p=G.players[pi],op=G.players[1-pi];
+  if(!G.R.jokers||G.cur!==pi||G.over||p.jokerUsed||G.turn<G.R.jokerFromTurn||!p.active) return false;
+  const f=jokerOf(p).fx;
+  if(f==="jGust") return op.bench.some(i=>!hero(i));
+  if(f==="jHealAll") return inPlay(p).some(i=>i.dmg>0);
+  return true;
+}
+async function playJoker(G,pi){
+  if(!canJoker(G,pi)) return false;
+  const p=G.players[pi],op=G.players[1-pi],J=jokerOf(p);
+  p.jokerUsed=true; G.stats.jokers++; G.stats.jokerTurn.push(G.turn);
+  log(G,`${who(G,pi)} setzt den Zweig-Joker „${J.name}“ ein!`,pi);
+  if(J.fx==="jAttach2"){const t=await choose(G,pi,`${J.name}: Wer bekommt 2 Energie?`,inPlay(p).map(x=>({inst:x,score:needScore(x)+(x===p.active?3:0)})));addKaffee(G,pi,t,2,"joker");}
+  if(J.fx==="jInvest"){inPlay(p).forEach(t=>addKaffee(G,pi,t,1,"joker"));if(draw(p,1))log(G,`${who(G,pi)}: +1 Karte.`,pi);}
+  if(J.fx==="jGust"){const t=await choose(G,pi,`${J.name}: Wen holst du nach vorn?`,op.bench.filter(i=>!hero(i)).map(i=>({inst:i,score:gustScore(G,pi,i)})));swapActive(op,t);log(G,`${t.card.name} muss nach vorn.`,pi);}
+  if(J.fx==="jHealAll") inPlay(p).forEach(i=>heal(G,pi,i,G.R.jokerHeal));
+  render(G); return true;
+}
+// Wie viel bringt es, diese gegnerische Lehrkraft nach vorn zu holen?
+function gustScore(G,pi,t){
+  const a=G.players[pi].active; if(!a) return 0;
+  const en=a.energy+(G.cur===pi?G.attachLeft:0);
+  const best=Math.max(0,...a.card.atks.filter(x=>x.cost<=en&&!x.dice).map(x=>calcDmg(G,a,t,baseDamage(G,pi,a,x,null))));
+  return (best>=hpLeft(t)?100+t.energy*10:0)+best-hpLeft(t)*.3;
+}
+function aiJokerScore(G,pi){
+  if(!canJoker(G,pi)) return -1;
+  const p=G.players[pi],op=G.players[1-pi],a=p.active,f=jokerOf(p).fx;
+  const need=x=>Math.max(0,strongCost(x)-x.energy);
+  if(f==="jAttach2") return need(a)>=1&&G.attachLeft===0?30:need(a)>=2?30:p.bench.some(x=>need(x)>=2)&&G.turn>=6?16:0;
+  if(f==="jInvest"){const n=inPlay(p).filter(x=>need(x)>0).length;return n>=3?32:n>=2&&G.turn>=8?26:G.turn>=14&&n?18:0;}
+  if(f==="jHealAll"){const h=inPlay(p).reduce((s,i)=>s+Math.min(G.R.jokerHeal,i.dmg),0);return h>=40||(hpLeft(a)<=30&&a.dmg>=20)?32:G.turn>=14&&h>=20?18:0;}
+  if(f==="jGust"){const b=Math.max(...op.bench.filter(i=>!hero(i)).map(i=>gustScore(G,pi,i)));return b>=100?40:G.turn>=16&&b>0?18:0;}
+  return 0;
+}
+function aiRedrawPick(G,p){
+  // Zu wenige Lehrkräfte: eine Unterstützungskarte tauschen. Sonst die schwächste Unterstützungskarte, wenn sie doppelt ist.
+  const sups=p.hand.filter(i=>i.sup);
+  if(teachersIn(p.hand).length<2&&sups.length) return sups[0];
+  const ids=sups.map(i=>i.sup.id); const dup=sups.find((i,k)=>ids.indexOf(i.sup.id)!==k);
+  return dup||null;
+}
+
+/* ---------- Computergegner ---------- */
+function aiValue(G,pi,a,atk){
+  const me=G.players[pi],op=G.players[1-pi];
+  const fx=atk.fx||[]; const has=t=>fx.find(f=>f.t===t); let f;
+  const d=baseDamage(G,pi,a,atk,null);
+  let v=0,kills=false;
+  const hit=i=>{const x=calcDmg(G,a,i,d);const k=d>0&&x>=hpLeft(i);return {x:x+(k?60:0),k};};
+  let pool=[op.active];
+  if(has("snipe")||(has("gust")&&op.bench.length)) pool=inPlay(op);
+  if(op.active){const best=pool.filter(Boolean).map(hit).sort((x,y)=>y.x-x.x)[0];v=best.x;kills=best.k;}
+  if(f=has("selfDmg")) v-=f.n>=hpLeft(a)?90:f.n*.4;
+  if(f=has("healSelf")) v+=Math.min(a.dmg,f.n)*.7;
+  if(f=has("healAll")) v+=inPlay(me).reduce((s,i)=>s+Math.min(i.dmg,f.n),0)*.6;
+  if(f=has("healOne")) v+=Math.max(0,...inPlay(me).map(i=>Math.min(i.dmg,f.n)))*.7;
+  if(f=has("benchSplash")) v+=f.n*op.bench.length*.8;
+  if((f=has("strip"))&&op.active) v+=Math.min(f.n,op.active.energy)*14;
+  if(has("draw")) v+=5;
+  if(f=has("attachSelf")||has("attachAny")) v+=14*f.n;
+  if((f=has("attachBench"))&&me.bench.length) v+=14*f.n;
+  if(has("noRetreat")||has("forceSwitch")) v+=4;
+  return {v,kills};
+}
+function aiPickAttack(G,pi){
+  const a=G.players[pi].active; if(!a) return -1;
+  const sk=strongIdx(a), strong=a.card.atks[sk];
+  const opts=a.card.atks.map((atk,k)=>({k,atk})).filter(o=>canAttack(G,pi,o.k)).map(o=>Object.assign(o,aiValue(G,pi,a,o.atk)));
+  if(!opts.length) return -1;
+  opts.sort((x,y)=>y.v-x.v);
+  const best=opts[0], en=a.energy, gain=G.R.attachPerTurn;
+  if(best.k!==sk&&en<strong.cost&&!best.kills){
+    const refund=(best.atk.fx||[]).find(f=>f.t==="attachSelf")?.n||0;
+    const stillStrongNext=en-best.atk.cost+refund+gain>=strong.cost;
+    const reachIfWait=en+gain>=strong.cost;
+    if(!stillStrongNext&&reachIfWait){const sv=aiValue(G,pi,a,strong).v;if(sv>=2*best.v+(G.R.aiSaveMargin||0)) return -1;}
+  }
+  return best.v>0?best.k:-1;
+}
+function aiAttachTarget(G,pi){
+  const me=G.players[pi]; const a=me.active;
+  if(G.turn===1&&G.R.firstAttachBenchOnly) return me.bench.slice().sort((x,y)=>strongCost(x)-strongCost(y))[0]||null;
+  // Vorladen: Fällt der aktive Lehrer wahrscheinlich im nächsten gegnerischen Zug und kann er schon angreifen, Kaffee auf die Bank
+  if(G.R.aiPreload&&a&&a.energy>=1&&me.bench.length){
+    const op=G.players[1-pi].active;
+    const threat=op?Math.max(...op.card.atks.filter(x=>x.cost<=op.energy+1).map(x=>calcDmg(G,op,a,Math.min(x.dmg||30,G.R.maxDmg))),0):0;
+    if(threat>=hpLeft(a)){const b=me.bench.filter(i=>i.energy<strongCost(i)).sort((x,y)=>y.energy-x.energy||hpLeft(y)-hpLeft(x))[0];if(b) return b;}
+  }
+  if(a&&a.energy<strongCost(a)) return a;
+  const b=me.bench.filter(i=>i.energy<strongCost(i)).sort((x,y)=>y.energy-x.energy)[0];
+  return b||a;
+}
+function aiBenchPick(G,pi){
+  // Lehrer mit Kaffee-Fähigkeit beim Ausspielen zuerst, sonst der robusteste
+  return teachersIn(G.players[pi].hand).sort((a,b)=>((b.card.passive?.key||"").startsWith("onPlay")?30:0)+b.card.hp-((a.card.passive?.key||"").startsWith("onPlay")?30:0)-a.card.hp)[0];
+}
+async function aiTurn(G){
+  const pi=G.cur,me=G.players[pi];
+  await sleep(G,650);
+  if(G.turn===1&&G.R.firstAttachBenchOnly&&!me.bench.length&&!teachersIn(me.hand).length) G.stats.starterNoBenchT1++;
+  while(me.bench.length<G.R.benchMax&&teachersIn(me.hand).length&&G.benchLeft>0){const t=aiBenchPick(G,pi);if(!(await benchFromHand(G,pi,t)))break;render(G);await sleep(G,380);}
+  while(G.supportsLeft>0){
+    const opts=me.hand.filter(i=>i.sup&&canPlaySupport(G,pi,i)).map(i=>({i,v:aiSupportScore(G,pi,i)})).filter(o=>o.v>=(G.R.aiSupportMin??10)).sort((a,b)=>b.v-a.v);
+    if(!opts.length) break;
+    await playSupport(G,pi,opts[0].i); if(G.over) return; render(G); await sleep(G,450);
+    while(me.bench.length<G.R.benchMax&&teachersIn(me.hand).length&&G.benchLeft>0){const t=aiBenchPick(G,pi);if(!(await benchFromHand(G,pi,t)))break;render(G);}
+  }
+  if(canRetreat(G,pi)&&hpLeft(me.active)<=30){
+    const best=me.bench.slice().sort((x,y)=>(hpLeft(y)+y.energy*20)-(hpLeft(x)+x.energy*20))[0];
+    if(hpLeft(best)>hpLeft(me.active)+30){doRetreat(G,pi,best);render(G);await sleep(G,450);}
+  }
+  while(canAttach(G,pi)&&me.active){const t=aiAttachTarget(G,pi);if(!t||!attach(G,pi,t))break;render(G);await sleep(G,380);}
+  if(aiJokerScore(G,pi)>=(G.R.aiJokerMin??25)){
+    const before=me.hand.length;
+    await playJoker(G,pi); render(G); await sleep(G,500);
+    if(me.hand.length>before){
+      while(me.bench.length<G.R.benchMax&&teachersIn(me.hand).length&&G.benchLeft>0){const t=aiBenchPick(G,pi);if(!(await benchFromHand(G,pi,t)))break;render(G);}
+      while(G.supportsLeft>0){const o=me.hand.filter(i=>i.sup&&canPlaySupport(G,pi,i)).map(i=>({i,v:aiSupportScore(G,pi,i)})).filter(o=>o.v>=(G.R.aiSupportMin??10)).sort((a,b)=>b.v-a.v);if(!o.length)break;await playSupport(G,pi,o[0].i);if(G.over)return;render(G);}
+    }
+  }
+  const k=aiPickAttack(G,pi);
+  if(k>=0){await doAttack(G,pi,k);return;}
+  G.stats.idleTurns++;
+  log(G,`${who(G,pi)}: Zug ohne Angriff beendet.`,pi);
+  await endTurn(G);
+}
+
+return {isHuman,RECOMMENDED_Z,RECOMMENDED_Z_SUPPORTS,ZWEIGE,ZWEIG_KEYS,zweigOf,mainZweig,deckProblems,canJoker,playJoker,aiJokerScore,scorchTargets,hero,canBench,ENERGIES,BEAT_REASON,TEMPLATES,SUPPORTS,supById,RECOMMENDED_SUPPORTS,isTeacher,teachersIn,canPlaySupport,playSupport,SUBJ,BEATS,WEAKTO,RULES,CARDS,RECOMMENDED,byId,shuffle,randomDeck,hpLeft,strongCost,inPlay,
+  createGame,startGame,endTurn,doAttack,attach,canAttach,benchFromHand,canRetreat,retreatCost,doRetreat,canAttack,
+  baseDamage,calcDmg,log,inExam,aiPickAttack,aiValue};
+})();
+
+
+</script>
+<script>
+const ZONES={"landscape":{"size":[2560,1440],"board":[[0.11905,-0.20331],[0.88095,-0.20331],[0.81086,0.23214],[0.18914,0.23214]],"zones":{"p0_active":[[0.47739,0.66029],[0.52261,0.66029],[0.52462,0.74332],[0.47538,0.74332]],"p0_bench0":[[0.40831,0.77122],[0.4589,0.77122],[0.45477,0.8762],[0.39911,0.8762]],"p0_bench1":[[0.47471,0.77122],[0.52529,0.77122],[0.52783,0.8762],[0.47217,0.8762]],"p0_bench2":[[0.5411,0.77122],[0.59169,0.77122],[0.60089,0.8762],[0.54523,0.8762]],"p0_deck":[[0.68497,0.77122],[0.73556,0.77122],[0.75918,0.8762],[0.70352,0.8762]],"p0_discard":[[0.66537,0.66029],[0.7106,0.66029],[0.72928,0.74332],[0.68004,0.74332]],"p0_zweig":[[0.26444,0.77122],[0.31503,0.77122],[0.29648,0.8762],[0.24082,0.8762]],"p1_active":[[0.47995,0.55417],[0.52005,0.55417],[0.52161,0.61879],[0.47839,0.61879]],"p1_bench0":[[0.43356,0.4829],[0.47022,0.4829],[0.46811,0.53654],[0.42886,0.53654]],"p1_bench1":[[0.48167,0.4829],[0.51833,0.4829],[0.51962,0.53654],[0.48038,0.53654]],"p1_bench2":[[0.52978,0.4829],[0.56644,0.4829],[0.57114,0.53654],[0.53189,0.53654]],"p1_deck":[[0.63403,0.4829],[0.67069,0.4829],[0.68275,0.53654],[0.6435,0.53654]],"p1_discard":[[0.64662,0.55417],[0.68672,0.55417],[0.70126,0.61879],[0.65804,0.61879]],"p1_zweig":[[0.32931,0.4829],[0.36597,0.4829],[0.3565,0.53654],[0.31725,0.53654]],"energy":[[0.30206,0.60404],[0.34457,0.60404],[0.33168,0.677],[0.28564,0.677]]}},"portrait":{"size":[1170,2532],"board":[[-1.49768,-0.60217],[2.49768,-0.60217],[1.49484,0.08714],[-0.49484,0.08714]],"zones":{"p0_active":[[0.44239,0.52729],[0.55761,0.52729],[0.56167,0.60053],[0.43833,0.60053]],"p0_discard":[[0.29014,0.52729],[0.40536,0.52729],[0.39869,0.60053],[0.27535,0.60053]],"p0_deck":[[0.59464,0.52729],[0.70986,0.52729],[0.72465,0.60053],[0.60131,0.60053]],"p0_bench0":[[0.26908,0.63153],[0.39586,0.63153],[0.38772,0.72085],[0.25104,0.72085]],"p0_bench1":[[0.43661,0.63153],[0.56339,0.63153],[0.56834,0.72085],[0.43166,0.72085]],"p0_bench2":[[0.60414,0.63153],[0.73092,0.63153],[0.74896,0.72085],[0.61228,0.72085]],"p1_active":[[0.44785,0.42883],[0.55215,0.42883],[0.55545,0.48845],[0.44455,0.48845]],"p1_discard":[[0.58567,0.42883],[0.68996,0.42883],[0.70201,0.48845],[0.5911,0.48845]],"p1_deck":[[0.31004,0.42883],[0.41433,0.42883],[0.4089,0.48845],[0.29799,0.48845]],"p1_bench0":[[0.57914,0.35713],[0.67548,0.35713],[0.68571,0.40775],[0.58375,0.40775]],"p1_bench1":[[0.45183,0.35713],[0.54817,0.35713],[0.55098,0.40775],[0.44902,0.40775]],"p1_bench2":[[0.32452,0.35713],[0.42086,0.35713],[0.41625,0.40775],[0.31429,0.40775]],"energy":[[0.26137,0.49253],[0.33296,0.49253],[0.3279,0.52292],[0.25415,0.52292]]}}};
+</script>
+<script>
+/* Lehrerzimmer – Online-Partie im Gleichschritt (Lockstep)
+   Beide Geräte rechnen dieselbe Engine mit demselben Startwert. Übertragen werden nur Züge,
+   positionsbasiert (Handindex, Zone, Auswahlindex) und fortlaufend nummeriert (n).
+   Der Transport (db + room) liefert Züge in beliebiger Reihenfolge an push(); hier werden sie geordnet. */
+const Lockstep=(()=>{
+function rngFrom(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* cfg: {decks:[d0,d1], zweig:[z0,z1], seed, names:[a,b], me}
+   ui:  {askChoice(title,options,opt) -> Promise<index|-1>, onRender(M), onOver(M), sleep(ms)} */
+function createMatch(E,cfg,ui={}){
+  const known=new Map(); let cursor=0; const waiters=[];
+  const M={me:cfg.me,G:null,inFlight:false,resigned:null,sent:0,send:null,error:null};
+  M.count=()=>{let n=0;while(known.has(n))n++;return n;};
+  M.push=m=>{if(!m||typeof m.n!=="number"||known.has(m.n))return;known.set(m.n,m);flush();};
+  // Beim Wiederverbinden liegen schon Züge bereit: dann ohne Pausen nachspielen
+  M.behind=()=>known.has(cursor);
+  M.moves=()=>{const a=[];for(let n=0;known.has(n);n++)a.push(known.get(n));return a;};
+  function flush(){while(waiters.length&&known.has(cursor)){const m=known.get(cursor++);waiters.shift()(m);}}
+  const next=()=>new Promise(r=>{waiters.push(r);flush();});
+  // Lokalen Zug abschicken: Nummer = nächste freie Stelle
+  M.act=m=>{if(!M.send||M.inFlight)return false;M.inFlight=true;const mv=Object.assign({n:M.count(),p:M.me},m);M.send(mv);return true;};
+  const hooks={
+    render:()=>ui.onRender&&ui.onRender(M),
+    sleep:ms=>M.behind()?Promise.resolve():ui.sleep?ui.sleep(ms):Promise.resolve(),
+    choose:async(G,title,options,opt,pi)=>{
+      if(pi===M.me&&ui.askChoice&&!known.has(cursor)) ui.askChoice(title,options,opt||{}).then(i=>{const mv={n:M.count(),p:pi,t:"choice",i:i==null?-1:i};M.send&&M.send(mv);});
+      for(;;){
+        const m=await next();
+        if(m.t==="resign"){M.resigned=m.p;throw "resigned";}
+        if(m.t==="choice"&&m.p===pi){
+          if(m.i>=0&&m.i<options.length) return options[m.i].inst;
+          return opt&&opt.optional?null:options[0].inst;
+        }
+      }
+    },
+    gameOver:()=>ui.onOver&&ui.onOver(M)
+  };
+  M.G=E.createGame(cfg.decks[0],cfg.decks[1],hooks,{rng:rngFrom(cfg.seed),human:[0,1],names:cfg.names||["Spieler 1","Spieler 2"],zweig:cfg.zweig});
+  const inst=(p,z)=>z==="a"?p.active:p.bench[z];
+  async function apply(m){
+    const G=M.G,pi=m.p,p=G.players[pi];
+    if(m.t==="bench"){const i=p.hand[m.h];if(i&&E.canBench(G,pi,i))await E.benchFromHand(G,pi,i);}
+    else if(m.t==="sup"){const i=p.hand[m.h];if(i&&E.canPlaySupport(G,pi,i))await E.playSupport(G,pi,i);}
+    else if(m.t==="attach"){const i=inst(p,m.z);if(i&&E.canAttach(G,pi,i))E.attach(G,pi,i);}
+    else if(m.t==="atk"){if(E.canAttack(G,pi,m.k))await E.doAttack(G,pi,m.k);}
+    else if(m.t==="retreat"){const t=p.bench[m.b];if(t&&E.canRetreat(G,pi))E.doRetreat(G,pi,t);}
+    else if(m.t==="joker"){if(E.canJoker(G,pi))await E.playJoker(G,pi);}
+    else if(m.t==="end"){E.log(G,`${G.names[pi]} beendet den Zug.`,pi);await E.endTurn(G);}
+  }
+  function resignEnd(p){const G=M.G;if(G.over)return;G.over=true;G.busy=true;G.winner=1-p;G.reason=`${G.names[p]} hat aufgegeben.`;hooks.render();hooks.gameOver();}
+  M.run=async()=>{
+    try{
+      await E.startGame(M.G);
+      while(!M.G.over){
+        const m=await next();
+        if(m.t==="resign"){M.resigned=m.p;resignEnd(m.p);break;}
+        if(m.t!=="choice"&&m.p===M.G.cur&&!M.G.over) await apply(m);
+        if(m.p===M.me) M.inFlight=false;
+        hooks.render();
+      }
+    }catch(e){
+      if(e==="resigned") resignEnd(M.resigned);
+      else if(e!=="abort"){M.error=e;throw e;}
+    }
+  };
+  /* Ist der lokale Spieler gerade am Zug und darf handeln? */
+  M.myTurn=()=>M.G.cur===M.me&&!M.G.busy&&!M.G.over&&!M.inFlight&&!known.has(cursor);
+  return M;
+}
+/* Zustand für den Vergleich zweier Geräte */
+function fingerprint(G){
+  const t=i=>i?`${i.card.id}:${i.dmg}:${i.energy}`:"-";
+  return JSON.stringify({turn:G.turn,cur:G.cur,over:G.over,winner:G.winner,pl:G.players.map(p=>({pts:p.points,a:t(p.active),b:p.bench.map(t),h:p.hand.map(i=>i.card?i.card.id:i.sup.id),d:p.deck.length,x:p.discard.map(i=>i.card.id),j:p.jokerUsed}))});
+}
+return {createMatch,fingerprint,rngFrom};
+})();
+
+
+/* Lehrerzimmer Arena – Spielfeld. Spielt gegen den Computer (Engine direkt) oder online (Lockstep).
+   ME ist der eigene Spielerindex (Gast = 1); eigene Karten liegen immer unten (Zonen p0). */
+const E=Engine;
+const {SUBJ,BEATS,WEAKTO,ZWEIGE,ZWEIG_KEYS,RECOMMENDED_Z,RECOMMENDED_Z_SUPPORTS,RULES,CARDS,SUPPORTS,ENERGIES,byId,supById,hpLeft}=E;
+const BOLT='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M11.6 1.5 4 11.2h4.6L7.4 18.5 16 8.2h-4.8z"/></svg>';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ini=n=>{const w=n.replace(/^Dr\.\s*/,"").split(" ");return (w[0][0]+(w[w.length-1][0]||"")).toUpperCase();};
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const $=id=>document.getElementById(id);
+const run=p=>p.catch(e=>{if(e!=="abort"&&e!=="resigned") console.error(e);});
+const cups=n=>Array.from({length:n},()=>`<i class="cup">${BOLT}</i>`).join("");
+
+/* ---------- Perspektive ---------- */
+function adj(m){return [m[4]*m[8]-m[5]*m[7],m[2]*m[7]-m[1]*m[8],m[1]*m[5]-m[2]*m[4],m[5]*m[6]-m[3]*m[8],m[0]*m[8]-m[2]*m[6],m[2]*m[3]-m[0]*m[5],m[3]*m[7]-m[4]*m[6],m[1]*m[6]-m[0]*m[7],m[0]*m[4]-m[1]*m[3]];}
+function mm(a,b){const c=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++){let s=0;for(let k=0;k<3;k++)s+=a[3*i+k]*b[3*k+j];c[3*i+j]=s;}return c;}
+function mv(m,v){return [m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];}
+function basis(p){const m=[p[0][0],p[1][0],p[2][0],p[0][1],p[1][1],p[2][1],1,1,1];const v=mv(adj(m),[p[3][0],p[3][1],1]);return mm(m,[v[0],0,0,0,v[1],0,0,0,v[2]]);}
+function quadMatrix(w,h,q){const t=mm(basis(q),adj(basis([[0,0],[w,0],[w,h],[0,h]])));for(let i=0;i<9;i++)t[i]/=t[8];return `matrix3d(${t[0]},${t[3]},0,${t[6]},${t[1]},${t[4]},0,${t[7]},0,0,1,0,${t[2]},${t[5]},0,${t[8]})`;}
+let mode="landscape",W=0,H=0;
+const L=()=>mode==="landscape";
+const U=()=>parseFloat(getComputedStyle($("stage")).getPropertyValue("--u"))||1;
+const Zraw=k=>ZONES[mode].zones[k];
+const px=q=>q.map(([x,y])=>[x*W,y*H]);
+const center=q=>{const p=px(q);return [(p[0][0]+p[1][0]+p[2][0]+p[3][0])/4,(p[0][1]+p[1][1]+p[2][1]+p[3][1])/4];};
+const qw=q=>{const p=px(q);return Math.hypot(p[2][0]-p[3][0],p[2][1]-p[3][1]);};
+
+const Game=(()=>{
+/* ---------- Zustand ---------- */
+let C=null,G=null,gameSeq=0,ME=0,OP=1;
+let selHand=null,selField=null,armed=false,lastLog=null,prevDmg=new Map(),prevField=new Map(),logOpen=false,actBusy=false,ended=false;
+const zp=pi=>pi===ME?"p0":"p1";
+const Z=(pi,slot)=>Zraw(`${zp(pi)}_${slot}`);
+const hasZ=(pi,slot)=>!!ZONES[mode].zones[`${zp(pi)}_${slot}`];
+const me=()=>G.players[ME], op=()=>G.players[OP];
+const myTurn=()=>!!G&&!ended&&(C.mode==="online"?C.M.myTurn():G.cur===ME&&!G.busy&&!G.over&&!actBusy);
+const nm=pi=>pi===ME?"Du":C.names[pi];
+
+const hooks={
+  render:()=>render(),
+  sleep:ms=>{const id=G&&G.__id;return new Promise((res,rej)=>setTimeout(()=>(G&&G.__id===id)?res():rej("abort"),ms*1.1));},
+  choose:(g,title,options,opt)=>chooseModal(title,options,opt).then(i=>i<0?null:options[i].inst),
+  gameOver:()=>setTimeout(showOver,900)
+};
+function reset(){selHand=selField=null;armed=false;lastLog=null;prevDmg=new Map();prevField=new Map();logOpen=false;actBusy=false;ended=false;closeAll();$("over")?.remove();$("confirm")?.remove();$("logbox")?.remove();}
+
+/* Gegen den Computer */
+function startAI(deck,zweig){
+  reset(); ME=0; OP=1;
+  const cz=ZWEIG_KEYS[Math.floor(Math.random()*ZWEIG_KEYS.length)];
+  C={mode:"ai",names:["Du","Computer"],deck,zweig};
+  G=E.createGame(deck,E.randomDeck(Math.random,RULES,cz),hooks,{human:0,names:["Du","Computer"],zweig:[zweig,cz]});
+  G.__id=++gameSeq; show(); render(); run(E.startGame(G));
+}
+/* Online: cfg {decks,zweig,seed,names,me}, net {send(m), close()} */
+function startOnline(cfg,net){
+  reset(); ME=cfg.me; OP=1-ME;
+  const M=Lockstep.createMatch(E,cfg,{
+    onRender:()=>render(),
+    sleep:ms=>new Promise(r=>setTimeout(r,ms*1.1)),
+    askChoice:(title,options,opt)=>chooseModal(title,options,opt),
+    onOver:()=>setTimeout(showOver,900)
+  });
+  M.send=m=>{M.push(m);net.send(m);};
+  C={mode:"online",names:cfg.names,M,net};
+  G=M.G; G.__id=++gameSeq; show(); render();
+  run(M.run().then(()=>render()));
+  return M;
+}
+function act(m){
+  if(!myTurn()) return;
+  closeAll(); render();
+  if(C.mode==="online"){C.M.act(m);render();return;}
+  const p=me(),z=s=>s==="a"?p.active:p.bench[s];
+  actBusy=true;
+  run((async()=>{
+    G.busy=true;
+    try{
+      if(m.t==="bench"){const i=p.hand[m.h];if(i&&E.canBench(G,ME,i)){G.busy=false;await E.benchFromHand(G,ME,i);}}
+      else if(m.t==="sup"){const i=p.hand[m.h];G.busy=false;if(i&&E.canPlaySupport(G,ME,i))await E.playSupport(G,ME,i);}
+      else if(m.t==="attach"){G.busy=false;const i=z(m.z);if(i&&E.canAttach(G,ME,i))E.attach(G,ME,i);}
+      else if(m.t==="retreat"){G.busy=false;const t=p.bench[m.b];if(t&&E.canRetreat(G,ME))E.doRetreat(G,ME,t);}
+      else if(m.t==="joker"){G.busy=false;if(E.canJoker(G,ME))await E.playJoker(G,ME);}
+      else if(m.t==="atk"){G.busy=false;actBusy=false;if(E.canAttack(G,ME,m.k)){await E.doAttack(G,ME,m.k);return;}}
+      else if(m.t==="end"){G.busy=false;actBusy=false;E.log(G,"Du beendest den Zug.",ME);await E.endTurn(G);return;}
+      if(!G.over) G.busy=false;
+    } finally { actBusy=false; render(); }
+  })());
+}
+function leave(){
+  if(!G) return;
+  if(C.mode==="online"&&!G.over){C.M.act({t:"resign"})||C.M.send({n:C.M.count(),p:ME,t:"resign"});}
+  else if(!G.over){G.__id=-1;}
+  finish();
+}
+function finish(){
+  const res=G?{mode:C.mode,won:G.over&&G.winner===ME,over:G.over}:null;
+  if(C&&C.net) try{C.net.close(res);}catch(e){}
+  G=null;C=null;closeAll();$("over")?.remove();$("confirm")?.remove();$("logbox")?.remove();hide();
+  Game.onExit&&Game.onExit(res);
+}
+function show(){document.body.classList.add("ingame");layout();}
+function hide(){document.body.classList.remove("ingame");$("field").innerHTML="";$("slots").innerHTML="";}
+
+/* ---------- Stage einpassen ---------- */
+function layout(){
+  const vw=innerWidth,vh=innerHeight;
+  mode=vw/vh<0.9?"portrait":"landscape";
+  const [iw,ih]=ZONES[mode].size,s=Math.min(vw/iw,vh/ih);
+  W=Math.round(iw*s);H=Math.round(ih*s);
+  const st=$("stage");st.classList.toggle("pt",!L());st.style.width=W+"px";st.style.height=H+"px";st.style.setProperty("--u",(L()?W/1280:W/430)+"px");
+  const src=L()?"arena_landscape.jpg":"arena_portrait.jpg";
+  if(!$("bg").src.endsWith(src)) $("bg").src=src;
+  document.documentElement.style.setProperty("--bgimg",`url(${src})`);
+  prevField=new Map(); placeHud(); render();
+}
+function at(el,x,y,a="tl"){el.style.left=x+"px";el.style.top=y+"px";el.style.transform={c:"translate(-50%,-50%)",tc:"translate(-50%,0)",tr:"translate(-100%,0)",br:"translate(-100%,-100%)",bl:"translate(0,-100%)"}[a]||"none";}
+function placeHud(){
+  const u=U(),b=ZONES[mode].board.map(([x,y])=>[x*W,y*H]),top=Math.max(0,b[0][1]),bot=b[3][1];
+  const ch=$("chalk");ch.style.left=Math.max(0,b[3][0])+"px";ch.style.width=(Math.min(W,b[2][0])-Math.max(0,b[3][0]))+"px";
+  ch.style.top=(L()?Math.max(top,bot-150*u):0)+"px";ch.style.height=(L()?Math.min(150*u,bot-top):bot-4*u)+"px";
+  const en=$("energy"),e=center(Zraw("energy")),et=$("endturn");
+  if(L()){
+    at($("logo"),16*u,14*u);at($("turnflag"),W/2,bot+8*u,"tc");
+    at($("plate1"),W-16*u,14*u,"tr");at($("plate0"),16*u,H*0.64);
+    en.style.width=en.style.height=qw(Zraw("energy"))*0.9+"px";at(en,e[0],e[1],"c");
+    et.style.width=et.style.height=118*u+"px";at(et,W-24*u,H*0.62,"tr");
+    $("hand").style.top=(H-118*u)+"px";$("toast").style.top=(e[1]-18*u)+"px";
+  }else{
+    at($("logo"),12*u,bot+8*u);at($("turnflag"),W-12*u,bot+10*u,"tr");
+    at($("plate1"),W/2,px(Zraw("p1_bench0"))[0][1]-58*u,"tc");at($("plate0"),12*u,H*0.795);
+    en.style.width=en.style.height=qw(Zraw("energy"))*1.15+"px";at(en,e[0],e[1],"c");
+    et.style.width=et.style.height=96*u+"px";at(et,W-12*u,H*0.765,"tr");
+    $("hand").style.top=(H*0.865)+"px";$("toast").style.top=(H*0.80-52*u)+"px";
+  }
+}
+
+/* ---------- Karten-HTML ---------- */
+const subjVar=c=>SUBJ[c.subj].v;
+function fieldHTML(i,cls=""){
+  const c=i.card,left=hpLeft(i),pct=Math.max(0,left/c.hp*100);
+  return `<div class="card f ${cls}" data-uid="${i.uid}" tabindex="0" role="button" aria-label="${esc(c.name)}, ${left} von ${c.hp} KP, ${i.energy} Energie" style="--c:var(${subjVar(c)})">
+   <div class="in"><div class="art">${ini(c.name)}<span class="hpb ${pct<=35?"low":""}">${left}</span><span class="en">${cups(Math.min(i.energy,5))}</span></div>
+   <div class="foot"><span class="nm">${esc(c.name)}</span><div class="bar ${pct<=35?"low":""}"><i style="width:${pct}%"></i></div></div></div></div>`;
+}
+function fullHTML(i,o={}){
+  if(i.sup){const x=i.sup;return `<div class="card full sup" style="--c:var(--sup)"><div class="in"><div class="top"><span class="nm">${esc(x.name)}</span></div><div class="fach">${x.gwent?`Sonderkarte · Idee aus Gwent: ${esc(x.gwent)}`:"Unterstützungskarte"}</div><div class="art">${esc(x.name[0])}</div><div class="txt">${esc(x.text)}</div></div></div>`;}
+  const c=i.card,left=hpLeft(i);
+  const strong=BEATS[c.subj]?SUBJ[BEATS[c.subj]].label:"–",weak=WEAKTO[c.subj]?SUBJ[WEAKTO[c.subj]].label:"–";
+  return `<div class="card full${o.shiny?" shiny":""}" style="--c:var(${subjVar(c)})"><div class="in">
+   <div class="top"><span class="nm">${esc(c.name)}</span><span class="hp">${left}<small>/${c.hp} KP</small></span></div>
+   <div class="fach">${o.shiny?"✦ Shiny · ":""}${esc(SUBJ[c.subj].label)} · ${esc(c.fach)}${c.legend?" · Schulleitung":""}</div>
+   <div class="art">${ini(c.name)}</div>
+   ${c.passive?`<div class="pass"><b>${esc(c.passive.name)}</b>${esc(c.passive.text)}</div>`:"<div></div>"}
+   <div class="atks">${c.atks.map(a=>`<div class="ar"><span class="cups">${cups(a.cost)}</span><span><b>${esc(a.name)}</b>${a.text?`<span class="t">${esc(a.text)}</span>`:""}</span><span class="d">${a.label??(a.dmg||"–")}</span></div>`).join("")}</div>
+   <div class="ft"><span>Stark: <b>${strong}</b></span><span>Schwach: <b>${weak}</b></span><span>Rückzug ${c.retreat}</span></div></div></div>`;
+}
+function handHTML(i){
+  if(i.sup){const x=i.sup;return `<div class="card sup" style="--c:var(--sup)"><div class="in" style="grid-template-rows:auto 1fr auto"><div class="top"><span class="nm">${esc(x.name)}</span></div><div class="art">${esc(x.name[0])}</div><div class="txt">${esc(x.text)}</div></div></div>`;}
+  const c=i.card;
+  return `<div class="card" style="--c:var(${subjVar(c)})"><div class="in"><div class="top"><span class="nm">${esc(c.name)}</span><span class="hp">${c.hp}<small>KP</small></span></div>
+   <div class="art">${ini(c.name)}</div><div class="txt">${c.atks.map(a=>`${a.cost}⚡ ${esc(a.name)} ${a.label??a.dmg}`).join("<br>")}</div><div class="meta"><span>${esc(SUBJ[c.subj].label)}</span><span>Rückzug ${c.retreat}</span></div></div></div>`;
+}
+const backHTML=n=>`<div class="card back"><div class="in"><span>${n}<br><small style="font-size:13px;font-family:var(--f-body)">Karten</small></span></div></div>`;
+function zweigHTML(p){const Zw=ZWEIGE[p.zweig];return `<div class="card f" style="--c:var(${SUBJ[p.zweig].v})${p.jokerUsed?";filter:grayscale(.75) brightness(.92)":""}" aria-label="Zweig-Karte ${esc(Zw.name)}"><div class="in"><div class="art" style="font-size:72px">${esc(Zw.name[0])}<span class="hpb" style="font-size:15px;padding:4px 8px">${p.jokerUsed?"Joker weg":"Joker ★"}</span></div><div class="foot"><span class="nm">${esc(Zw.name.split(" ")[0])}</span><span style="font-size:13px;font-weight:700;color:var(--ink-2)">${esc(Zw.joker.name)}</span></div></div></div>`;}
+
+/* ---------- Zeichnen ---------- */
+function put(html,q,parent=$("field")){const t=document.createElement("div");t.innerHTML=html.trim();const el=t.firstChild;el.style.transform=quadMatrix(160,223,px(q));parent.appendChild(el);return el;}
+function render(){
+  if(!$("stage")||!G) return;
+  const f=$("field");f.innerHTML="";$("slots").innerHTML="";
+  const now=new Map();
+  G.players.forEach((p,pi)=>{
+    const mine=pi===ME;
+    const cls=i=>{let c="";if(mine&&armed&&E.canAttach(G,ME,i))c+=" target";if(mine&&selField===i.uid)c+=" sel";if(!prevField.has(i.uid)&&prevField.size)c+=" enter";if(G.flash.has(i.uid))c+=" hit";return c;};
+    const place=(i,slot)=>{const el=put(fieldHTML(i,cls(i)),Z(pi,slot));now.set(i.uid,{html:el.outerHTML,slot,pi});
+      if(slot==="active"&&G.noRetreat[pi]) el.querySelector(".art").insertAdjacentHTML("beforeend",'<span class="lock">Kein Rückzug</span>');};
+    if(p.active) place(p.active,"active");
+    p.bench.forEach((b,k)=>place(b,`bench${k}`));
+    if(p.deck.length) put(backHTML(p.deck.length),Z(pi,"deck"));
+    if(p.discard.length){const top=p.discard[p.discard.length-1];const el=put(fieldHTML(top," dead"),Z(pi,"discard"));el.removeAttribute("tabindex");el.removeAttribute("data-uid");el.querySelector(".art").insertAdjacentHTML("beforeend",`<span class="badge">${p.discard.length}× Feierabend</span>`);}
+    if(hasZ(pi,"zweig")) put(zweigHTML(p),Z(pi,"zweig"));
+  });
+  prevField.forEach((v,uid)=>{if(!now.has(uid)&&G.players.some(p=>p.discard.some(d=>d.uid===uid))){const t=document.createElement("div");t.innerHTML=v.html;const el=t.firstChild;el.classList.add("gone");el.classList.remove("enter","sel","target");f.appendChild(el);setTimeout(()=>el.remove(),750);}});
+  G.players.forEach(p=>E.inPlay(p).forEach(i=>{const before=prevDmg.get(i.uid);if(before!=null&&before!==i.dmg){const v=now.get(i.uid);if(v) floatNum(Z(v.pi,v.slot),i.dmg-before);}prevDmg.set(i.uid,i.dmg);}));
+  prevField=now;
+  if(selHand!=null){const i=me().hand.find(x=>x.uid===selHand);if(i&&i.card&&E.canBench(G,ME,i)){const k=me().bench.length;if(k<3){const d=document.createElement("div");d.className="slot drop";d.style.transform=quadMatrix(160,223,px(Z(ME,`bench${k}`)));$("slots").appendChild(d);}}}
+  renderHud(); renderHand(); showLog();
+}
+function floatNum(q,delta){
+  const [x,y]=center(q),u=U(),d=document.createElement("div");
+  d.className="dmg"+(delta<0?" heal":"");d.textContent=(delta>0?"−":"+")+Math.abs(delta);
+  d.style.left=x+"px";d.style.top=(y-40*u)+"px";d.style.fontSize=(L()?52:40)*u+"px";$("hud").appendChild(d);setTimeout(()=>d.remove(),1200);
+}
+function plateHTML(pi){
+  const p=G.players[pi],Zw=ZWEIGE[p.zweig],v=SUBJ[p.zweig].v,mine=pi===ME;
+  const jb=mine?`<button class="btn joker" id="joker" style="--c:var(${v})" ${myTurn()&&E.canJoker(G,ME)?"":"disabled"} title="${esc(Zw.joker.text)}">★ ${esc(Zw.joker.name)}</button>`:"";
+  const off=!mine&&C.mode==="online"&&C.oppAway?'<span class="mini" style="color:var(--pen)">getrennt …</span>':"";
+  return `<span class="dot" style="--c:var(${v})"></span><span><b>${esc(nm(pi))}</b><br><span class="zw" style="--c:var(${v})" title="${esc(Zw.perk.name)}: ${esc(Zw.perk.text)}">${esc(Zw.name.replace(" und Verwaltung",""))}</span></span>
+   <span class="mini">Hand ${p.hand.length} · Deck ${p.deck.length}${!mine&&p.jokerUsed?" · Joker weg":""}</span>${off}${jb}${mine?`<button class="btn" id="logbtn" aria-expanded="${logOpen}">Verlauf</button><button class="btn" id="quit">${C.mode==="online"?"Aufgeben":"Menü"}</button>`:""}`;
+}
+function renderHud(){
+  $("chalk").innerHTML=[ME,OP].map(pi=>{const p=G.players[pi];return `<div class="side"><span class="who">${esc(nm(pi))}</span><span class="pts" style="${L()?"":"font-size:calc(var(--u)*30)"}">${p.points}</span>${L()?`<span class="tally">${[5,10,15].map(v=>`<i class="${p.points>=v?"on":""}"></i>`).join("")}</span>`:""}</div>`;}).join('<span class="vs">:</span>');
+  const tf=$("turnflag");
+  tf.textContent=G.over?"Spiel vorbei":G.turn===0?"Aufstellung":(G.cur===ME?`Zug ${G.turn} · Du bist dran`:`Zug ${G.turn} · ${C.names[OP]}`)+(E.inExam(G)?" · Prüfungsphase":"");
+  tf.className=G.cur===ME&&!G.over&&G.turn>0?"you":"";
+  $("plate0").innerHTML=plateHTML(ME);$("plate1").innerHTML=plateHTML(OP);
+  const en=$("energy");en.disabled=!myTurn()||G.attachLeft<=0;en.classList.toggle("armed",armed);$("enbadge").textContent=G.cur===ME?G.attachLeft:"–";
+  $("endturn").disabled=!myTurn();
+}
+function renderHand(){
+  const h=$("hand"),p=me(),n=p.hand.length,u=U(),cw=L()?150*u:118*u,sc=cw/160,maxW=L()?W*0.52:W*0.96;
+  const over=Math.min(0.42,Math.max(L()?0.18:0.28,(1-maxW/(Math.max(1,n)*cw))/2));
+  h.innerHTML=p.hand.map((c,k)=>{
+    const mid=(n-1)/2,rot=(k-mid)*(L()?4:3.5),dy=Math.abs(k-mid)*(L()?7:5)*u,up=selHand===c.uid;
+    const ok=G.cur===ME&&(c.sup?E.canPlaySupport(G,ME,c):E.canBench(G,ME,c));
+    return `<div class="hc ${up?"lift":""}" data-huid="${c.uid}" tabindex="0" role="button" aria-label="${esc(c.sup?c.sup.name:c.card.name)}" style="width:${cw}px;height:${223*sc}px;margin:0 ${-cw*over}px;transform:translateY(${up?-125*u:dy}px) rotate(${up?0:rot}deg);${ok||up?"":"filter:saturate(.55) brightness(.92)"}">
+      <div style="transform:scale(${sc});transform-origin:0 0;width:160px;height:223px">${handHTML(c)}</div></div>`;
+  }).join("");
+  h.querySelectorAll(".hc").forEach(el=>{
+    el.addEventListener("mouseenter",()=>{if(+el.dataset.huid!==selHand)el.style.transform=`translateY(${-60*u}px) rotate(0deg) scale(1.06)`;});
+    el.addEventListener("mouseleave",()=>{if(+el.dataset.huid!==selHand)renderHand();});
+  });
+  renderBubble();
+}
+
+/* ---------- Meldungen ---------- */
+let toastT=null;
+function toast(msg,ms=2300){const t=$("toast");t.textContent=msg;t.classList.remove("off");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.add("off"),ms);}
+function showLog(){
+  if(!G.log.length) return;
+  if(G.log[0]!==lastLog){const fresh=[];for(const l of G.log){if(l===lastLog)break;fresh.push(l);}lastLog=G.log[0];const pick=fresh.find(l=>!/^Zug \d+ ·/.test(l.msg))||fresh[0];if(pick)toast(pick.msg);}
+  if(logOpen) renderLogBox();
+}
+function renderLogBox(){
+  let b=$("logbox");if(!logOpen||!G){b?.remove();return;}
+  if(!b){b=document.createElement("div");b.id="logbox";$("hud").appendChild(b);}
+  b.innerHTML=`<ol>${G.log.slice(0,40).map(l=>`<li class="${l.who==="sys"?"sys":l.who===ME?"lme":"lop"}">${esc(l.msg)}</li>`).join("")}</ol>`;
+  const r=$("plate0").getBoundingClientRect(),st=$("stage").getBoundingClientRect(),u=U();
+  b.style.left=(r.left-st.left)+"px";b.style.top=Math.max(8,r.top-st.top-b.offsetHeight-10*u)+"px";
+}
+
+/* ---------- Aktionsblase (Hand) und Aktionsfenster (Feld) ---------- */
+function benchWhy(){const p=me();if(p.bench.length>=RULES.benchMax)return "Die Bank ist voll.";if(G.benchLeft<=0)return "Du hast in diesem Zug schon eine Lehrkraft auf die Bank gelegt.";return "";}
+function supWhy(i){if(G.turn<RULES.supportFromTurn)return "Im ersten Zug darf der Startspieler keine Unterstützungskarte spielen.";if(G.supportsLeft<=0)return "Du hast in diesem Zug schon "+(me().zweig==="WIR"?"2 Unterstützungskarten":"eine Unterstützungskarte")+" gespielt.";return E.canPlaySupport(G,ME,i)?"":"Gerade kein passendes Ziel.";}
+function renderBubble(){
+  $("bubble")?.remove(); if(selHand==null) return;
+  const p=me(),h=p.hand.findIndex(x=>x.uid===selHand),i=p.hand[h]; if(!i){selHand=null;return;}
+  const hc=$("hand").querySelector(`[data-huid="${i.uid}"]`); if(!hc) return;
+  const b=document.createElement("div");b.id="bubble";const u=U();
+  if(i.sup){const why=myTurn()?supWhy(i):"Warte, bis du dran bist.";
+    b.innerHTML=`<b class="t">${esc(i.sup.name)}</b>${i.sup.gwent?` <span class="mini" style="color:var(--ink-2)">· Gwent: ${esc(i.sup.gwent)}</span>`:""}<p>${esc(i.sup.text)}</p><div class="row"><button class="btn pri" data-b="play" ${why?"disabled":""}>Ausspielen</button><button class="btn" data-b="view">Ansehen</button><button class="btn" data-b="close">Zurück</button></div>${why?`<p class="why">${why}</p>`:""}`;
+  }else{const why=myTurn()?benchWhy():"Warte, bis du dran bist.";const c=i.card;
+    b.innerHTML=`<b class="t">${esc(c.name)}</b> <span class="mini" style="color:var(--ink-2)">${c.hp} KP · ${esc(SUBJ[c.subj].label)}</span><p>${c.passive?`<b>${esc(c.passive.name)}:</b> ${esc(c.passive.text)}`:c.atks.map(a=>`${esc(a.name)} (${a.cost} Energie, ${a.label??a.dmg})`).join(" · ")}</p><div class="row"><button class="btn pri" data-b="bench" ${why?"disabled":""}>Auf die Bank</button><button class="btn" data-b="view">Ansehen</button><button class="btn" data-b="close">Zurück</button></div>${why?`<p class="why">${why}</p>`:""}`;
+  }
+  $("hud").appendChild(b);
+  const r=hc.getBoundingClientRect(),st=$("stage").getBoundingClientRect();
+  b.style.left=Math.max(8,Math.min(W-b.offsetWidth-8,r.left-st.left+r.width/2-b.offsetWidth/2))+"px";
+  b.style.top=Math.max(8,r.top-st.top-b.offsetHeight-10*u)+"px";
+}
+function previewDamage(a,atk){
+  const o=op().active;if(!o)return "";
+  if(atk.dice)return "Würfelglück: 10, 30 oder 50";
+  const base=E.baseDamage(G,ME,a,atk,null);if(!base)return "";
+  const d=E.calcDmg(G,a,o,base,true);
+  return `→ ${d} gegen ${o.card.name}${d>base?" (Schwäche)":""}${d>=hpLeft(o)?" · Feierabend!":""}`;
+}
+function openSheet(i){
+  closeSheet();const p=me(),isA=p.active===i,u=U(),c=i.card;
+  const s=document.createElement("div");s.id="sheet";
+  let h=`<h3>${esc(c.name)} <span class="mini" style="font-family:var(--f-body);font-size:calc(var(--u)*12);color:var(--ink-2)">${hpLeft(i)}/${c.hp} KP · ${i.energy} Energie · ${isA?"aktiv":"Bank"}</span></h3>`;
+  if(isA) h+=c.atks.map((a,k)=>{const ok=myTurn()&&E.canAttack(G,ME,k);const why=G.turn===1&&!RULES.firstTurnAttack?"Im ersten Zug wird nicht angegriffen":i.energy<a.cost?`Braucht ${a.cost} Energie, liegt ${i.energy}`:previewDamage(i,a);
+    return `<button class="atk" data-k="${k}" ${ok?"":"disabled"}><span class="cups">${cups(a.cost)}</span><span><b>${esc(a.name)}</b><small>${esc(why)}${a.text?` · ${esc(a.text)}`:""}</small></span><span class="d">${a.label??(a.dmg||"–")}</span></button>`;}).join("");
+  const rc=E.retreatCost(p,i);
+  h+=`<div class="row"><button class="btn" data-s="attach" ${myTurn()&&E.canAttach(G,ME,i)?"":"disabled"}>⚡ Energie anlegen</button>${isA?`<button class="btn" data-s="retreat" ${myTurn()&&E.canRetreat(G,ME)?"":"disabled"}>Rückzug (${rc?rc+" Energie":"frei"})</button>`:""}<button class="btn" data-s="close">Schließen</button></div>`;
+  s.innerHTML=h;$("hud").appendChild(s);
+  const q=isA?Z(ME,"active"):Z(ME,`bench${p.bench.indexOf(i)}`),[x,y]=center(q);
+  s.style.left=Math.min(Math.max(8,x-s.offsetWidth/2),W-s.offsetWidth-8)+"px";
+  s.style.top=Math.max(8,Math.min(H-s.offsetHeight-8,y-s.offsetHeight-(L()?90:70)*u))+"px";
+  s.querySelector("button:not(:disabled)")?.focus({preventScroll:true});
+}
+function closeSheet(){$("sheet")?.remove();}
+function closeAll(){closeSheet();$("bubble")?.remove();$("viewer")?.remove();selHand=selField=null;armed=false;}
+function viewCard(i){
+  $("viewer")?.remove();const w=document.createElement("div");w.className="mwrap";w.id="viewer";const sc=(L()?1.6:1.5);
+  w.innerHTML=`<div class="mbox" style="text-align:center"><div style="width:${200*sc}px;height:${280*sc}px;margin:0 auto;max-width:100%"><div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px">${fullHTML(i)}</div></div>${i.card&&(i.dmg||i.energy)?`<p class="mini" style="color:var(--ink-2)">Gerade ${hpLeft(i)}/${i.card.hp} KP · ${i.energy} Energie</p>`:""}<div class="mrow"><button class="btn" id="vclose">Schließen</button></div></div>`;
+  $("stage").appendChild(w);$("vclose").focus();$("vclose").onclick=()=>w.remove();w.addEventListener("click",e=>{if(e.target===w)w.remove();});
+}
+/* Auswahlfenster: liefert den Index der gewählten Option, −1 für „überspringen“ */
+function chooseModal(title,options,opt={}){
+  return new Promise(res=>{
+    $("modal")?.remove();closeSheet();$("bubble")?.remove();
+    const w=document.createElement("div");w.className="mwrap";w.id="modal";const sc=L()?0.78:0.62;
+    w.innerHTML=`<div class="mbox" role="dialog" aria-modal="true" aria-label="${esc(title)}"><h3>${esc(title)}</h3><div class="mopts">${options.map((o,k)=>{const i=o.inst;const live=i.card&&(i.dmg||i.energy)?`${hpLeft(i)}/${i.card.hp} KP · ${i.energy}⚡`:"";
+      return `<button class="mopt" data-o="${k}" style="width:${200*sc}px;height:${280*sc}px" aria-label="${esc(i.card?i.card.name:i.sup.name)}"><div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px">${fullHTML(i)}</div>${live?`<span class="st">${live}</span>`:""}</button>`;}).join("")}</div>
+      ${opt.optional?`<div class="mrow"><button class="btn" data-o="skip">${esc(opt.optional)}</button></div>`:""}</div>`;
+    $("stage").appendChild(w);
+    w.addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;w.remove();res(b.dataset.o==="skip"?-1:+b.dataset.o);render();});
+    w.querySelector("button")?.focus({preventScroll:true});
+  });
+}
+function confirmBox(text,yes,onYes){
+  $("confirm")?.remove();const w=document.createElement("div");w.className="mwrap";w.id="confirm";
+  w.innerHTML=`<div class="mbox" style="text-align:center;max-width:min(92%,420px)"><h3>${esc(text)}</h3><div class="mrow"><button class="btn pri" id="cyes">${esc(yes)}</button><button class="btn" id="cno">Weiterspielen</button></div></div>`;
+  $("stage").appendChild(w);$("cno").focus();$("cno").onclick=()=>w.remove();$("cyes").onclick=()=>{w.remove();onYes();};
+}
+function showOver(){
+  if(!G||!G.over||$("over")) return;
+  ended=true;
+  const you=G.winner===ME,draw=G.winner===-1,o=document.createElement("div");o.id="over";
+  const reward=you?"Belohnung: 1 Bonus-Pack":"";
+  o.innerHTML=`<div class="box"><h2>${draw?"Unentschieden":you?"Gewonnen!":"Verloren."}</h2><p>${draw?"Die Zeit ist um.":you?"15 Punkte, Note 1,0. Abi bestanden!":`${esc(C.names[OP])} hat die 15 Punkte. Ab in die Nachprüfung.`}</p>
+   <div class="mini" style="color:var(--ink-2);margin-bottom:12px">${G.reason?esc(G.reason)+" · ":""}Du ${me().points} · ${esc(C.names[OP])} ${op().points} · ${G.turn} Züge${reward?" · "+reward:""}</div>
+   <div class="mrow">${C.mode==="ai"?'<button class="btn pri" id="again">Nochmal</button>':""}<button class="btn${C.mode==="ai"?"":" pri"}" id="tomenu">Zum Menü</button></div></div>`;
+  $("stage").appendChild(o);
+  Game.onEnd&&Game.onEnd({mode:C.mode,won:you,draw});
+  const again=$("again");if(again){again.onclick=()=>{const {deck,zweig}=C;startAI(deck,zweig);};again.focus();}
+  $("tomenu").onclick=()=>finish();
+}
+
+/* ---------- Eingaben ---------- */
+$("hud").addEventListener("click",e=>{
+  if(!G) return;
+  if(e.target.closest("#logbtn")){logOpen=!logOpen;renderHud();renderLogBox();return;}
+  if(e.target.closest("#quit")){if(G.over){finish();return;}confirmBox(C.mode==="online"?"Partie aufgeben? Dein Gegner gewinnt.":"Partie verlassen und zurück ins Menü?",C.mode==="online"?"Aufgeben":"Verlassen",leave);return;}
+  const p=me();
+  const bb=e.target.closest("#bubble [data-b]");
+  if(bb){const h=p.hand.findIndex(x=>x.uid===selHand),i=p.hand[h],a=bb.dataset.b;
+    if(a==="close"){selHand=null;render();return;}
+    if(a==="view"&&i){viewCard(i);return;}
+    if(a==="bench"&&i) act({t:"bench",h});
+    if(a==="play"&&i) act({t:"sup",h});
+    return;}
+  const sb=e.target.closest("#sheet [data-s],#sheet .atk");
+  if(sb){const i=[p.active,...p.bench].find(x=>x&&x.uid===selField);if(!i){closeSheet();return;}
+    const z=p.active===i?"a":p.bench.indexOf(i);
+    if(sb.dataset.s==="close"){selField=null;closeSheet();render();return;}
+    if(sb.dataset.s==="attach"){act({t:"attach",z});return;}
+    if(sb.dataset.s==="retreat"&&E.canRetreat(G,ME)){closeSheet();selField=null;chooseModal("Mit wem tauschst du?",p.bench.map(x=>({inst:x})),{optional:"Abbrechen"}).then(b=>{if(b>=0)act({t:"retreat",b});});return;}
+    if(sb.classList.contains("atk")){act({t:"atk",k:+sb.dataset.k});return;}
+    return;}
+  const hc=e.target.closest("#hand .hc");
+  if(hc){const uid=+hc.dataset.huid,h=p.hand.findIndex(x=>x.uid===uid),i=p.hand[h];armed=false;closeSheet();selField=null;
+    if(selHand===uid&&myTurn()){
+      if(i.sup&&!supWhy(i)){act({t:"sup",h});return;}
+      if(i.card&&!benchWhy()){act({t:"bench",h});return;}}
+    selHand=selHand===uid?null:uid;render();return;}
+  if(!myTurn()) return;
+  if(e.target.closest("#energy")){armed=!armed;selHand=null;closeSheet();render();if(armed)toast("Tippe die Lehrkraft an, die 1 Energie bekommt");return;}
+  if(e.target.closest("#endturn")){act({t:"end"});return;}
+  if(e.target.closest("#joker")&&E.canJoker(G,ME)){act({t:"joker"});return;}
+});
+$("hud").addEventListener("keydown",e=>{const hc=e.target.closest("#hand .hc");if(hc&&(e.key==="Enter"||e.key===" ")){e.preventDefault();hc.click();}});
+const findField=uid=>{if(!G)return null;for(const p of G.players){const x=[p.active,...p.bench].find(y=>y&&y.uid===uid);if(x)return x;}return null;};
+$("field").addEventListener("click",e=>{
+  const c=e.target.closest(".card[data-uid]");if(!c||!G) return;
+  const i=findField(+c.dataset.uid);if(!i) return;
+  const p=me(),mine=E.inPlay(p).includes(i);
+  if(!mine||!myTurn()){viewCard(i);return;}
+  if(armed){if(E.canAttach(G,ME,i))act({t:"attach",z:p.active===i?"a":p.bench.indexOf(i)});return;}
+  selHand=null;selField=i.uid;render();openSheet(i);
+});
+$("field").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches(".card[data-uid]")){e.preventDefault();e.target.click();}});
+$("field").addEventListener("mouseover",e=>{
+  const c=e.target.closest(".card[data-uid]"),pk=$("peek");if(!c||!G){pk.classList.add("off");return;}
+  const i=findField(+c.dataset.uid);if(!i)return;
+  const u=U(),sc=(L()?250:190)*u/200;
+  pk.innerHTML=`<div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px">${fullHTML(i)}</div>`;
+  pk.style.width=200*sc+"px";pk.style.height=280*sc+"px";
+  const r=c.getBoundingClientRect(),st=$("stage").getBoundingClientRect(),x=r.left-st.left,y=r.top-st.top;
+  const left=x+r.width/2<W/2?x+r.width+14*u:x-200*sc-14*u;
+  pk.style.left=Math.max(6,Math.min(W-200*sc-6,left))+"px";pk.style.top=Math.max(6,Math.min(H-280*sc-6,y+r.height/2-140*sc))+"px";
+  pk.classList.remove("off");
+});
+$("field").addEventListener("mouseleave",()=>$("peek").classList.add("off"));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&G&&!$("modal")){$("viewer")?.remove();closeSheet();selHand=selField=null;armed=false;render();}});
+addEventListener("resize",()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{layout();},80);});
+
+return {startAI,startOnline,layout,fullHTML,active:()=>!!G,setOppAway:v=>{if(C){C.oppAway=v;if(G)renderHud();}},match:()=>C&&C.M,onExit:null,onEnd:null};
+})();
+
+/* Lehrerzimmer Arena – Menü, Profil (Sammlung, Decks, Packs), Album und Online-Lobby */
+
+/* ---------- Profil: privat pro Person in db, sonst im Browser ---------- */
+const Profile=(()=>{
+  const LS="lza-profil-v1";
+  let data=null,doc=null,writing=false,again=false;
+  const today=()=>new Date().toISOString().slice(0,10);
+  function base(){
+    const t={};new Set(Object.values(RECOMMENDED_Z).flat()).forEach(id=>t[id]=1);
+    const sup={};SUPPORTS.forEach(s=>sup[s.id]=2);
+    return {v:1,coll:{t,s:{},sup,e:{kaffee:1}},
+      decks:ZWEIG_KEYS.map(z=>({id:"start-"+z,name:"Startdeck "+ZWEIGE[z].name.split(" ")[0],zweig:z,ids:RECOMMENDED_Z[z].concat(RECOMMENDED_Z_SUPPORTS),start:true})),
+      active:"start-MINT",packs:{day:"",free:0,bonus:1,opened:0},stats:{w:0,l:0,ow:0,ol:0},best:[],cur:null};
+  }
+  function fix(d){const b=base();d=Object.assign(b,d||{});d.coll=Object.assign(b.coll,d.coll||{});["t","s","sup","e"].forEach(k=>d.coll[k]=d.coll[k]||{});d.packs=Object.assign(base().packs,d.packs||{});d.stats=Object.assign(base().stats,d.stats||{});if(!Array.isArray(d.decks)||!d.decks.length)d.decks=b.decks;return d;}
+  async function init(db,uid){
+    data=fix(store.get(LS));
+    if(db&&uid){
+      try{doc=db.collection("data/users/"+uid).doc("profil");const s=await doc.get();
+        if(s.exists) data=fix(JSON.parse(JSON.stringify(s.data()))); else await doc.set(data);}catch(e){doc=null;}
+    }
+    daily(); return data;
+  }
+  function daily(){if(data.packs.day!==today()){data.packs.day=today();data.packs.free=2;save();}}
+  async function flushDb(){if(!doc)return;if(writing){again=true;return;}writing=true;try{await doc.set(JSON.parse(JSON.stringify(data)));}catch(e){}writing=false;if(again){again=false;flushDb();}}
+  let t=null;
+  function save(){store.set(LS,data);clearTimeout(t);t=setTimeout(flushDb,400);}
+  const owns=id=>(data.coll.t[id]||0)+(data.coll.s[id]||0)>0;
+  const supOwned=id=>data.coll.sup[id]||0;
+  function deckIssues(d){
+    const p=E.deckProblems(d.ids,d.zweig);
+    const miss=d.ids.filter(id=>byId(id)&&!owns(id));
+    if(miss.length) p.push(`Nicht in deiner Sammlung: ${miss.map(id=>byId(id).name).join(", ")}.`);
+    SUPPORTS.forEach(s=>{const n=d.ids.filter(x=>x===s.id).length;if(n>supOwned(s.id))p.push(`„${s.name}“ besitzt du nur ${supOwned(s.id)}×.`);});
+    return p;
+  }
+  return {init,save,daily,get:()=>data,owns,supOwned,deckIssues,synced:()=>!!doc};
+})();
+
+/* ---------- Packs ---------- */
+const PACK={teacherSlots:3,lucky:[["teacher",38],["energyCommon",33],["energyUncommon",10],["energyRare",6],["energyGold",1],["legend",4],["shiny",7],["shinyLegend",1]]};
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+function openPack(){
+  const P=Profile.get(),album=P.coll;
+  const normal=CARDS.filter(c=>!c.legend),legends=CARDS.filter(c=>c.legend);
+  const ids=E.shuffle(normal.map(c=>c.id)).slice(0,PACK.teacherSlots);
+  const out=ids.map(id=>({k:"t",id}));
+  out.push({k:"sup",id:rnd(SUPPORTS).id});
+  let r=Math.random()*100,L="teacher";for(const [k,w] of PACK.lucky){if((r-=w)<0){L=k;break;}}
+  if(L==="teacher") out.push({k:"t",id:rnd(normal.filter(c=>!ids.includes(c.id))).id});
+  else if(L==="legend") out.push({k:"t",id:rnd(legends).id,tag:"Legendär!"});
+  else if(L==="shiny") out.push({k:"s",id:rnd(normal).id,tag:"Shiny!"});
+  else if(L==="shinyLegend") out.push({k:"s",id:rnd(legends).id,tag:"Shiny-Legendär!!"});
+  else {const rar={energyCommon:"Gewöhnlich",energyUncommon:"Ungewöhnlich",energyRare:"Selten",energyGold:"Ultra-selten"}[L];
+    out.push({k:"e",id:rnd(ENERGIES.filter(e=>e.rarity===rar)).id,tag:rar==="Ultra-selten"?"Ultra-selten!":rar==="Selten"?"Selten":null});}
+  out.forEach(x=>{x.isNew=!album[x.k][x.id];album[x.k][x.id]=(album[x.k][x.id]||0)+1;});
+  P.packs.opened++;
+  out.filter(x=>x.tag&&x.tag!=="Selten").forEach(x=>{P.best.unshift({k:x.k,id:x.id,tag:x.tag,pack:P.packs.opened});P.best=P.best.slice(0,8);});
+  Profile.save(); return out;
+}
+
+/* ---------- Kleine Karten für Menüs ---------- */
+const asInst=id=>byId(id)?{card:byId(id),dmg:0,energy:0}:{sup:supById(id)};
+function miniCard(id,sc=0.7,o={}){return `<div class="mc" style="width:${200*sc}px;height:${280*sc}px"><div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px">${Game.fullHTML(asInst(id),o)}</div></div>`;}
+function energyCard(e,sc=0.7){return `<div class="mc" style="width:${200*sc}px;height:${280*sc}px"><div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px"><div class="card full sup en-${(e.rarity||"").replace(/\W/g,"")}" style="--c:var(--gold)"><div class="in"><div class="top"><span class="nm">${esc(e.name)}</span></div><div class="fach">Energiekarte · ${esc(e.rarity)}</div><div class="art">${BOLT.replace('<svg','<svg style="width:60px;height:60px;fill:var(--c)"')}</div><div class="txt">Sammelmotiv. Alle Energiekarten wirken gleich: 1 Energie.</div></div></div></div></div>`;}
+
+/* ---------- Menü ---------- */
+const Menu=(()=>{
+  const TABS=[["start","Start"],["spielen","Spielen"],["decks","Decks"],["packs","Packs"],["album","Album"],["regeln","Regeln"]];
+  let tab="start",edit=null,lastPack=null,filt="ALL",albumF="t";
+  const el=()=>$("menu");
+  function open(t){tab=t||tab;document.body.classList.remove("ingame");render();}
+  function render(){
+    if(!Profile.get()) return;
+    const m=el();
+    m.querySelector(".tabs").innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" aria-current="${k===tab?"page":"false"}">${l}</button>`).join("");
+    const v=m.querySelector(".view");
+    v.innerHTML=({start:vStart,spielen:vPlay,decks:vDecks,packs:vPacks,album:vAlbum,regeln:vRules}[tab]||vStart)();
+    m.querySelector(".who").innerHTML=whoHTML();
+  }
+  function whoHTML(){const P=Profile.get();const n=Online.myName();return `<span class="dot"></span><b>${esc(n||"Du")}</b><span class="mini">${P.stats.w} Siege · ${Profile.synced()?"Profil gespeichert":"nur in diesem Browser"}</span>`;}
+  const activeDeck=()=>{const P=Profile.get();return P.decks.find(d=>d.id===P.active)||P.decks[0];};
+  const packsLeft=()=>{const P=Profile.get();return P.packs.free+P.packs.bonus;};
+
+  function vStart(){
+    const P=Profile.get(),d=activeDeck(),z=ZWEIGE[d.zweig],cur=P.cur;
+    const owned=CARDS.filter(c=>Profile.owns(c.id)).length;
+    return `<section class="hero"><div><h1>Lehrer<em>zimmer</em> Arena</h1><p class="lead">Das Sammelkartenspiel der FOS Holzkirchen. Bau dein Deck aus den vier Zweigen, öffne Packs und spiel gegen den Computer oder live gegen deine Klasse.</p>
+      ${window.LZ_SITE&&Online.ready()?`<div class="formrow"><label for="pname">Dein Spielername</label><input id="pname" maxlength="24" value="${esc(Online.myName())}" placeholder="z. B. Joshua"><button class="btn" data-go="savename">Speichern</button></div>`:""}
+      <div class="row">${cur?`<button class="btn pri big" data-go="resume">Laufende Online-Partie fortsetzen</button>`:""}<button class="btn pri big" data-go="ai">Gegen den Computer</button><button class="btn big" data-tab="spielen">Online spielen</button></div></div>
+      <div class="deckcard" style="--c:var(${SUBJ[d.zweig].v})"><span class="eyebrow">Aktives Deck</span><b>${esc(d.name)}</b><span>${esc(z.name)} · Joker ${esc(z.joker.name)}</span>${Profile.deckIssues(d).length?`<span class="warn">${esc(Profile.deckIssues(d)[0])}</span>`:'<span class="ok">Spielbereit</span>'}<button class="btn" data-tab="decks">Deck wechseln</button></div></section>
+      <section class="tiles">
+        <button class="tile" data-tab="packs"><span class="eyebrow">Packs</span><b>${packsLeft()}</b><span>${P.packs.free} gratis heute · ${P.packs.bonus} Bonus</span></button>
+        <button class="tile" data-tab="album"><span class="eyebrow">Sammlung</span><b>${owned}/${CARDS.length}</b><span>Lehrkräfte · ${Object.keys(P.coll.s).length} Shiny</span></button>
+        <div class="tile"><span class="eyebrow">Gegen den Computer</span><b>${P.stats.w}:${P.stats.l}</b><span>Siege : Niederlagen</span></div>
+        <div class="tile"><span class="eyebrow">Online</span><b>${P.stats.ow}:${P.stats.ol}</b><span>${Online.status()}</span></div>
+      </section>`;
+  }
+
+  function deckPicker(){
+    const P=Profile.get();
+    return `<div class="dpick">${P.decks.map(d=>{const bad=Profile.deckIssues(d).length;return `<button class="dchip" data-pickdeck="${esc(d.id)}" aria-pressed="${d.id===P.active}" style="--c:var(${SUBJ[d.zweig].v})"><b>${esc(d.name)}</b><span>${esc(ZWEIGE[d.zweig].name.split(" ")[0])}${bad?" · unvollständig":""}</span></button>`;}).join("")}</div>`;
+  }
+  function vPlay(){
+    const d=activeDeck(),bad=Profile.deckIssues(d);
+    return `<section class="panel"><h2>Dein Deck</h2>${deckPicker()}${bad.length?`<p class="warn">${esc(bad[0])}</p>`:""}</section>
+      <section class="grid2">
+        <div class="panel"><h2>Gegen den Computer</h2><p class="lead">Der Computer spielt einen zufälligen Zweig. Ein Sieg bringt dir ein Bonus-Pack.</p><button class="btn pri big" data-go="ai" ${bad.length?"disabled":""}>Partie starten</button></div>
+        <div class="panel" id="onlinepanel">${Online.panelHTML(bad.length>0)}</div>
+      </section>`;
+  }
+
+  function vDecks(){
+    const P=Profile.get();
+    if(edit) return deckEditor();
+    return `<section class="panel"><div class="phead"><h2>Deine Decks</h2><button class="btn pri" data-go="newdeck" ${P.decks.length>=10?"disabled":""}>Neues Deck</button></div>
+      <p class="lead">Ein Deck hat 10 verschiedene Lehrkräfte (mindestens ${RULES.zweigMin} aus deinem Zweig, höchstens 1 Schulleitung) und 5 Unterstützungskarten (jede höchstens 2×). Du kannst nur Karten aus deiner Sammlung einbauen.</p>
+      <div class="decklist">${P.decks.map(d=>{const bad=Profile.deckIssues(d);return `<div class="drow" style="--c:var(${SUBJ[d.zweig].v})"><div><b>${esc(d.name)}</b><span>${esc(ZWEIGE[d.zweig].name)}${d.start?" · Vorlage":""}</span>${bad.length?`<span class="warn">${esc(bad[0])}</span>`:'<span class="ok">Spielbereit</span>'}</div>
+        <div class="row">${d.id===P.active?'<span class="pill">Aktiv</span>':`<button class="btn" data-activate="${esc(d.id)}">Aktiv setzen</button>`}<button class="btn" data-edit="${esc(d.id)}">${d.start?"Kopieren und bearbeiten":"Bearbeiten"}</button>${d.start?"":`<button class="btn" data-del="${esc(d.id)}">Löschen</button>`}</div></div>`;}).join("")}</div></section>`;
+  }
+  function deckEditor(){
+    const d=edit,ts=d.ids.filter(id=>byId(id)),ss=d.ids.filter(id=>!byId(id)),bad=Profile.deckIssues(d);
+    const own=ts.filter(id=>byId(id).subj===d.zweig).length;
+    const list=CARDS.filter(c=>filt==="ALL"||c.subj===filt||(filt==="OWN"&&c.subj===d.zweig));
+    const chips=[["ALL","Alle"],["OWN","Mein Zweig"],...Object.entries(SUBJ).map(([k,s])=>[k,s.label])];
+    return `<section class="panel"><div class="phead"><h2>Deck bearbeiten</h2><div class="row"><button class="btn" data-go="cancelEdit">Abbrechen</button><button class="btn pri" data-go="saveDeck" ${bad.length?"disabled":""}>Speichern</button></div></div>
+      <div class="formrow"><label for="dname">Name</label><input id="dname" maxlength="28" value="${esc(d.name)}"></div>
+      <div class="zpick2">${ZWEIG_KEYS.map(z=>`<button class="zb2" data-dz="${z}" aria-pressed="${z===d.zweig}" style="--c:var(${SUBJ[z].v})"><b>${esc(ZWEIGE[z].name)}</b><span>${esc(ZWEIGE[z].perk.name)} · Joker ${esc(ZWEIGE[z].joker.name)}</span></button>`).join("")}</div>
+      <p class="status ${bad.length?"warn":"ok"}">${ts.length}/10 Lehrkräfte · ${own}/${RULES.zweigMin}+ aus ${esc(ZWEIGE[d.zweig].name.split(" ")[0])} · ${ss.length}/5 Unterstützer · ${bad.length?esc(bad[0]):"Deck ist spielbereit."}</p>
+      <h3>Unterstützungskarten</h3>
+      <div class="cg">${SUPPORTS.map(s=>{const n=ss.filter(x=>x===s.id).length,o=Profile.supOwned(s.id);return `<div class="pk ${n?"on":""}">${miniCard(s.id,0.62)}<div class="step"><button class="btn" data-sup="${s.id}" data-d="-1" ${n?"":"disabled"} aria-label="${esc(s.name)} weniger">−</button><b>${n}</b><button class="btn" data-sup="${s.id}" data-d="1" ${n>=Math.min(2,o)||ss.length>=5?"disabled":""} aria-label="${esc(s.name)} mehr">+</button></div><span class="have">${o}× in Sammlung</span></div>`;}).join("")}</div>
+      <h3>Lehrkräfte</h3>
+      <div class="chips">${chips.map(([k,l])=>`<button class="chipb" data-f="${k}" aria-pressed="${filt===k}">${esc(l)}</button>`).join("")}</div>
+      <div class="cg">${list.map(c=>{const on=ts.includes(c.id),ow=Profile.owns(c.id);return `<button class="pk ${on?"on":""} ${ow?"":"locked"}" data-pick="${c.id}" ${ow?"":"disabled"} aria-pressed="${on}" aria-label="${esc(c.name)}${ow?"":" (fehlt in deiner Sammlung)"}">${miniCard(c.id,0.62)}${on?'<span class="badge2">Im Deck</span>':""}${ow?"":'<span class="lockq">?</span>'}</button>`;}).join("")}</div></section>`;
+  }
+
+  function vPacks(){
+    const P=Profile.get(),left=packsLeft();
+    const tagOf=x=>x.tag?`<span class="tag">${esc(x.tag)}</span>`:x.isNew?'<span class="tag new">Neu</span>':"";
+    const face=x=>x.k==="e"?energyCard(ENERGIES.find(e=>e.id===x.id),0.8):miniCard(x.id,0.8,{shiny:x.k==="s"});
+    const stage=lastPack?`<div class="stage5">${lastPack.map((x,i)=>x.open?`<div class="flip revealed ${x.tag&&x.tag!=="Selten"?"glow":""}">${tagOf(x)}${face(x)}</div>`:`<button class="flip" data-flip="${i}" aria-label="Karte ${i+1} aufdecken"><div class="backside"><div>Lehrer<em>zimmer</em></div></div></button>`).join("")}</div>${lastPack.some(x=>!x.open)?'<div class="row" style="justify-content:center"><button class="btn" data-go="allopen">Alle aufdecken</button></div>':""}`:"";
+    return `<section class="panel"><div class="packbar"><button class="pack-env" data-go="pack" ${left?"":"disabled"}>Pack öffnen<small>${left} verfügbar</small></button>
+      <div class="pinfo"><h2>Packs</h2><p class="lead">Jeden Tag gibt es 2 Gratis-Packs, dazu 1 Bonus-Pack für jeden Sieg. Jedes Pack hat 5 Karten: 3 Lehrkräfte, 1 Unterstützungskarte und 1 Glückskarte (Schulleitung 4 %, Shiny 7 %, Shiny-Schulleitung 1 %). Neue Lehrkräfte kannst du sofort in Decks einbauen.</p>
+      ${P.best.length?`<b>Deine besten Funde</b><ul>${P.best.map(b=>`<li>${esc(b.tag)} ${esc(b.k==="e"?ENERGIES.find(e=>e.id===b.id).name:b.k==="sup"?supById(b.id).name:byId(b.id).name+(b.k==="s"?" (Shiny)":""))} <span class="mini">(Pack ${b.pack})</span></li>`).join("")}</ul>`:""}</div></div>${stage}</section>`;
+  }
+  function vAlbum(){
+    const P=Profile.get(),c=P.coll,cnt=o=>Object.keys(o).filter(k=>o[k]>0).length;
+    const prog=(l,h,a)=>`<div><span class="mini">${l}</span><b>${h}/${a}</b><div class="bar2"><i style="width:${Math.round(100*h/a)}%"></i></div></div>`;
+    const total=CARDS.length*2+SUPPORTS.length+ENERGIES.length,have=cnt(c.t)+cnt(c.s)+cnt(c.sup)+cnt(c.e);
+    const sec=[["t","Lehrkräfte"],["s","Shiny"],["sup","Unterstützer"],["e","Energie"]];
+    const cell=(html,n)=>`<div class="ac ${n?"":"locked"}">${html}${n?`<span class="cnt">×${n}</span>`:'<span class="lockq">?</span>'}</div>`;
+    let grid="";
+    if(albumF==="t") grid=CARDS.map(x=>cell(miniCard(x.id,0.6),c.t[x.id])).join("");
+    if(albumF==="s") grid=CARDS.map(x=>cell(miniCard(x.id,0.6,{shiny:true}),c.s[x.id])).join("");
+    if(albumF==="sup") grid=SUPPORTS.map(x=>cell(miniCard(x.id,0.6),c.sup[x.id])).join("");
+    if(albumF==="e") grid=ENERGIES.map(x=>cell(energyCard(x,0.6),c.e[x.id])).join("");
+    return `<section class="panel"><h2>Sammelalbum</h2><div class="prog">${prog("Gesamt",have,total)}${prog("Lehrkräfte",cnt(c.t),CARDS.length)}${prog("Shiny",cnt(c.s),CARDS.length)}${prog("Unterstützer",cnt(c.sup),SUPPORTS.length)}${prog("Energie-Motive",cnt(c.e),ENERGIES.length)}<div><span class="mini">Packs geöffnet</span><b>${P.packs.opened}</b></div></div>
+      <div class="chips">${sec.map(([k,l])=>`<button class="chipb" data-af="${k}" aria-pressed="${albumF===k}">${l}</button>`).join("")}</div><div class="cg album">${grid}</div></section>`;
+  }
+  function vRules(){
+    const zt=ZWEIG_KEYS.map(z=>{const Z=ZWEIGE[z];return `<tr><th><span class="zdot" style="--c:var(${SUBJ[z].v})"></span>${esc(Z.name)}</th><td><b>${esc(Z.perk.name)}:</b> ${esc(Z.perk.text)}</td><td><b>${esc(Z.joker.name)}:</b> ${esc(Z.joker.text)}</td></tr>`;}).join("");
+    const cyc=["MINT","GES","WIR","FS","DEU","MINT"].map(k=>`<span class="s" style="--c:var(${SUBJ[k].v})">${SUBJ[k].label}</span>`).join(' → ');
+    return `<section class="panel rules2"><h2>So geht's</h2>
+      <div class="grid2"><div><h3>Ziel</h3><p>Schicke 3 gegnerische Lehrkräfte in den Feierabend. Jeder Feierabend bringt 5 Punkte, wer zuerst 15 hat, gewinnt.</p>
+      <h3>Dein Zug</h3><ol><li>1 Karte ziehen.</li><li>Beliebig: 1 Lehrkraft auf die Bank, 1 Unterstützungskarte (Wirtschaft: 2), 1 Energie anlegen, 1× Rückzug, Joker (1× pro Spiel).</li><li>Angreifen: Die aktive Lehrkraft zahlt die Energie der Attacke. Damit endet der Zug.</li></ol>
+      <p class="mini">Der Startspieler darf im ersten Zug weder angreifen noch Unterstützer oder Joker spielen.</p></div>
+      <div><h3>Schwächen</h3><p class="cyc">${cyc}</p><p>Gegen die Gruppe rechts daneben macht eine Lehrkraft +${RULES.weakBonus} Schaden.</p>
+      <h3>Gwent-Ideen</h3><ul><li><b>Neu ziehen:</b> Bis zu 2 Startkarten tauschen.</li><li><b>Heldenkarte:</b> Gegnerische Unterstützer und Joker wirken nicht auf die Schulleitung.</li><li><b>Sonderkarten:</b> ${SUPPORTS.filter(s=>s.gwent).map(s=>esc(s.name)).join(", ")}.</li></ul></div></div>
+      <h3>Die 4 Zweige</h3><div class="tscroll"><table class="ztbl"><tbody>${zt}</tbody></table></div>
+      <h3>Online spielen</h3>${window.LZ_SITE?`<p>Schick den Link dieser Seite an deine Mitspielerinnen und Mitspieler. Wer eine Herausforderung erstellt, wartet unter „Spielen“; die anderen sehen sie dort und treten bei. Dein Spielername steht auf der Startseite.</p>`:`<p>Mitspielerinnen und Mitspieler brauchen einen claude.ai-Zugang zu dieser Seite. Lade sie über „Teilen“ per E-Mail mit dem Recht <b>Bearbeiten</b> ein (ohne öffentlichen Link). Dann sehen sie deine Herausforderung unter „Spielen“. Bitte die Echtnamen nur mit Einverständnis der Lehrkräfte teilen.</p>`}
+      <p><a href="https://claude.ai/artifact/JnYEqSzdzPNuHWdzYJpfen#regeln" target="_blank" rel="noopener">Ausführliche Regeln und Spieltest-Zahlen</a></p></section>`;
+  }
+
+  /* Eingaben im Menü */
+  function onClick(e){
+    const P=Profile.get(),t=e.target;
+    const tb=t.closest("[data-tab]");if(tb){tab=tb.dataset.tab;edit=null;render();el().querySelector(".view").scrollTop=0;return;}
+    const pd=t.closest("[data-pickdeck]");if(pd){P.active=pd.dataset.pickdeck;Profile.save();render();return;}
+    const go=t.closest("[data-go]")?.dataset.go;
+    if(go==="ai"){const d=activeDeck();if(Profile.deckIssues(d).length){tab="decks";render();return;}Game.startAI(d.ids.slice(),d.zweig);return;}
+    if(go==="resume"){Online.resume();return;}
+    if(go==="savename"&&window.LZ_SITE&&window.LZ_SITE.setName){window.LZ_SITE.setName($("pname").value).then(n=>{Online.setMyName(n);render();});return;}
+    if(go==="pack"){if(!packsLeft())return;if(P.packs.free>0)P.packs.free--;else P.packs.bonus--;lastPack=openPack();Profile.save();render();return;}
+    if(go==="allopen"){lastPack.forEach(x=>x.open=true);render();return;}
+    if(go==="newdeck"){edit={id:"d"+Date.now(),name:"Neues Deck",zweig:activeDeck().zweig,ids:[]};render();return;}
+    if(go==="cancelEdit"){edit=null;render();return;}
+    if(go==="saveDeck"){edit.name=($("dname").value||"Mein Deck").slice(0,28);const k=P.decks.findIndex(d=>d.id===edit.id);if(k>=0)P.decks[k]=edit;else P.decks.push(edit);P.active=edit.id;edit=null;Profile.save();render();return;}
+    if(go&&Online.handle(go,activeDeck())) return;
+    const fl=t.closest("[data-flip]");if(fl){lastPack[+fl.dataset.flip].open=true;render();return;}
+    const af=t.closest("[data-af]");if(af){albumF=af.dataset.af;render();return;}
+    const ac=t.closest("[data-activate]");if(ac){P.active=ac.dataset.activate;Profile.save();render();return;}
+    const ed=t.closest("[data-edit]");if(ed){const d=P.decks.find(x=>x.id===ed.dataset.edit);edit=JSON.parse(JSON.stringify(d));if(d.start){edit.id="d"+Date.now();edit.name=d.name.replace("Startdeck","Mein");delete edit.start;}render();return;}
+    const dl=t.closest("[data-del]");if(dl){if(dl.dataset.confirm){P.decks=P.decks.filter(d=>d.id!==dl.dataset.del);if(P.active===dl.dataset.del)P.active=P.decks[0].id;Profile.save();render();}else{dl.dataset.confirm="1";dl.textContent="Wirklich löschen?";}return;}
+    if(edit){
+      const dz=t.closest("[data-dz]");if(dz){edit.zweig=dz.dataset.dz;edit.name=$("dname").value;render();return;}
+      const f=t.closest("[data-f]");if(f){filt=f.dataset.f;edit.name=$("dname").value;render();return;}
+      const pk=t.closest("[data-pick]");if(pk){const id=pk.dataset.pick,ts=edit.ids.filter(x=>byId(x));edit.name=$("dname").value;
+        if(edit.ids.includes(id)) edit.ids=edit.ids.filter(x=>x!==id); else if(ts.length<10) edit.ids.push(id);
+        const y=el().querySelector(".view").scrollTop;render();el().querySelector(".view").scrollTop=y;return;}
+      const sp=t.closest("[data-sup]");if(sp){const id=sp.dataset.sup,d=+sp.dataset.d;edit.name=$("dname").value;
+        if(d>0) edit.ids.push(id); else {const k=edit.ids.lastIndexOf(id);if(k>=0)edit.ids.splice(k,1);}
+        const y=el().querySelector(".view").scrollTop;render();el().querySelector(".view").scrollTop=y;return;}
+    }
+  }
+  return {open,render,onClick,activeDeck,refreshOnline:()=>{if(tab==="spielen"&&$("onlinepanel"))$("onlinepanel").innerHTML=Online.panelHTML(Profile.deckIssues(activeDeck()).length>0);if(tab==="start")render();else el().querySelector(".who").innerHTML=whoHTML();}};
+})();
+
+/* ---------- Online: Lobby (db), Live-Kanal (room), Züge im Gleichschritt ---------- */
+const Online=(()=>{
+  let db=null,room=null,user=null,myId=null,myNameStr="",ready=false,lobby=[],peers=0,names={},waiting=null,msg="",busy=false;
+  const T_OPEN=30*60*1000;
+  async function init(){
+    try{[db,room,user]=await Promise.all([claude.use("db"),claude.use("room"),claude.use("user")]);}catch(e){}
+    if(user){try{myId=await user.id();myNameStr=await user.name();}catch(e){}}
+    if(window.LZ_SITE&&myId){try{const n=localStorage.getItem("lz-site-name");if(n)myNameStr=n;}catch(e){}}
+    ready=!!(db&&myId);
+    if(room){try{room.presence({s:"menu"});room.onPeers(c=>{peers=c.peers.filter(p=>p.kind==="viewer").length;Menu.refreshOnline();},()=>{});}catch(e){}}
+    if(ready){
+      db.collection("lobby").onSnapshot(s=>{lobby=s.docs.map(d=>Object.assign({id:d.id},d.data()));resolveNames();check();Menu.refreshOnline();},()=>{ready=false;Menu.refreshOnline();});
+    }
+    return {db,uid:myId};
+  }
+  async function resolveNames(){
+    if(!user) return;const ids=[...new Set(lobby.flatMap(l=>[l.host,l.guest]).filter(Boolean))].filter(id=>!(id in names));
+    if(!ids.length) return;try{const ps=await user.profiles(ids);ids.forEach(id=>names[id]=(ps[id]&&ps[id].name)||"Mitspieler");Menu.refreshOnline();}catch(e){}
+  }
+  const nameOf=id=>id===myId?(myNameStr||"Du"):(names[id]||"Mitspieler");
+  const open=()=>lobby.filter(l=>l.st==="open"&&Date.now()-(l.t||0)<T_OPEN);
+  function status(){return !ready?"nicht verfügbar":`${peers||1} online · ${open().filter(l=>l.host!==myId).length} offene Herausforderungen`;}
+  function panelHTML(deckBad){
+    if(!ready&&window.LZ_SITE) return `<h2>Online</h2><p class="lead">${window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey?"Keine Verbindung zum Spielserver. Prüfe dein Internet und lade die Seite neu.":"Der Online-Modus wird gerade eingerichtet. Gegen den Computer kannst du schon spielen."}</p>`;
+    if(!ready) return `<h2>Online</h2><p class="lead">Online-Partien brauchen einen angemeldeten claude.ai-Zugang mit Bearbeitungsrecht für diese Seite. Wer das hat, sieht hier offene Herausforderungen.</p><p class="mini">Einladen: „Teilen“ oben rechts, Person per E-Mail mit „Bearbeiten“ hinzufügen.</p>`;
+    const mine=open().find(l=>l.host===myId),others=open().filter(l=>l.host!==myId);
+    return `<h2>Online <span class="pill">${peers||1} online</span></h2>
+      ${mine?`<p class="lead">Deine Herausforderung ist offen (${esc(ZWEIGE[mine.hz].name)}). Warte, bis jemand beitritt.</p><button class="btn" data-go="cancelChallenge">Zurückziehen</button>`
+        :`<p class="lead">Fordere jemanden heraus oder tritt einer offenen Partie bei. Dein aktives Deck wird benutzt.</p><div class="row"><button class="btn pri" data-go="challenge" ${deckBad||busy?"disabled":""}>Herausforderung erstellen</button><button class="btn" data-go="quick" ${deckBad||busy||!others.length?"disabled":""}>Schnell beitreten</button></div>`}
+      <h3>Offene Herausforderungen</h3>${others.length?`<ul class="lob">${others.map(l=>`<li><span class="dot" style="--c:var(${SUBJ[l.hz].v})"></span><b>${esc(nameOf(l.host))}</b><span class="mini">${esc(ZWEIGE[l.hz].name)} · vor ${Math.max(1,Math.round((Date.now()-l.t)/60000))} Min.</span><button class="btn" data-go="join:${esc(l.id)}" ${deckBad||busy?"disabled":""}>Beitreten</button></li>`).join("")}</ul>`:'<p class="mini">Gerade keine. Erstelle selbst eine.</p>'}
+      ${msg?`<p class="warn">${esc(msg)}</p>`:""}`;
+  }
+  const rid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+  function handle(go,deck){
+    if(go==="challenge"){challenge(deck);return true;}
+    if(go==="cancelChallenge"){const m=open().find(l=>l.host===myId);if(m)db.collection("lobby").doc(m.id).delete().catch(()=>{});return true;}
+    if(go==="quick"){const o=open().filter(l=>l.host!==myId).sort((a,b)=>a.t-b.t)[0];if(o)join(o.id,deck);return true;}
+    if(go.startsWith("join:")){join(go.slice(5),deck);return true;}
+    return false;
+  }
+  async function challenge(deck){
+    busy=true;msg="";Menu.refreshOnline();
+    try{const mid=rid();await db.collection("lobby").doc(mid).set({mid,host:myId,hz:deck.zweig,hd:deck.ids,st:"open",t:Date.now(),seed:Math.floor(Math.random()*2e9)});waiting=mid;}
+    catch(e){msg="Die Herausforderung konnte nicht gespeichert werden. Hast du Bearbeitungsrecht für diese Seite?";}
+    busy=false;Menu.refreshOnline();
+  }
+  async function join(id,deck){
+    busy=true;msg="";Menu.refreshOnline();
+    try{
+      const ref=db.collection("lobby").doc(id),a=await ref.acquire({holder:myId,ttlMs:5000});
+      if(!a.acquired){msg="Jemand anderes tritt gerade bei.";}
+      else{const s=await ref.get(),d=s.exists&&s.data();
+        if(!d||d.st!=="open"){msg="Diese Herausforderung ist schon vergeben.";}
+        else{await ref.update({st:"taken",guest:myId,gz:deck.zweig,gd:deck.ids,tt:Date.now()});start(Object.assign({id},d,{guest:myId,gz:deck.zweig,gd:deck.ids}),1);}}
+    }catch(e){msg="Beitreten hat nicht geklappt. Versuch es noch einmal.";}
+    busy=false;Menu.refreshOnline();
+  }
+  function check(){
+    if(Game.active()) return;
+    const m=lobby.find(l=>l.host===myId&&l.st==="taken"&&l.guest&&l.id===waiting);
+    if(m){waiting=null;start(m,0);}
+  }
+  function sanitize(m){
+    if(!m||typeof m!=="object") return null;
+    const T=["bench","sup","attach","atk","retreat","joker","end","choice","resign"],int=v=>Number.isInteger(v)?v:-99;
+    if(!T.includes(m.t)||!Number.isInteger(m.n)||m.n<0||(m.p!==0&&m.p!==1)) return null;
+    const o={n:m.n,p:m.p,t:m.t};
+    if(m.h!=null)o.h=int(m.h);if(m.k!=null)o.k=int(m.k);if(m.b!=null)o.b=int(m.b);if(m.i!=null)o.i=int(m.i);if(m.z!=null)o.z=m.z==="a"?"a":int(m.z);
+    return o;
+  }
+  async function start(l,me,resume){
+    if(!user) return;
+    try{const ps=await user.profiles([l.host,l.guest]);[l.host,l.guest].forEach(id=>names[id]=(ps[id]&&ps[id].name)||names[id]||"Mitspieler");}catch(e){}
+    const P=Profile.get();P.cur={mid:l.id,me};Profile.save();
+    const cfg={decks:[l.hd,l.gd],zweig:[l.hz,l.gz],seed:l.seed,names:[nameOf(l.host),nameOf(l.guest)],me};
+    const mine=db.doc(`matches/${l.id}/p/${me}`),theirs=db.doc(`matches/${l.id}/p/${1-me}`);
+    let myMoves=[],writing=false,dirty=false,r=null,unsub=[];
+    const flush=async()=>{if(writing){dirty=true;return;}writing=true;try{await mine.set({moves:myMoves.slice(),by:myId,t:Date.now()});}catch(e){}writing=false;if(dirty){dirty=false;flush();}};
+    const net={send:m=>{myMoves.push(m);flush();if(r)r.emit("mv",m).catch(()=>{});},close:res=>{unsub.forEach(f=>{try{f();}catch(e){}});if(r)r.leave().catch(()=>{});P.cur=null;Profile.save();if(me===0)db.collection("lobby").doc(l.id).update({st:"done"}).catch(()=>{});}};
+    if(resume){try{const s=await mine.get();if(s.exists)myMoves=(s.data().moves||[]).map(sanitize).filter(Boolean);}catch(e){}}
+    const M=Game.startOnline(cfg,net);
+    myMoves.forEach(m=>M.push(m));
+    unsub.push(theirs.onSnapshot(s=>{if(s.exists)(s.data().moves||[]).forEach(m=>{const x=sanitize(m);if(x&&x.p===1-me)M.push(x);});},()=>{}));
+    if(room){try{r=await room.join("m-"+l.id);unsub.push(r.on("mv",msg=>{if(!msg.isMe){const x=sanitize(msg.data);if(x&&x.p===1-me)M.push(x);}},()=>{}));r.presence({p:me});
+      unsub.push(r.onPeers(c=>{Game.setOppAway(!c.peers.some(p=>!p.isMe&&p.presence&&p.presence.p===1-me));},()=>{}));}catch(e){r=null;}}
+  }
+  async function resume(){
+    const P=Profile.get();if(!P.cur||!ready){P.cur=null;Profile.save();Menu.render();return;}
+    const s=await db.collection("lobby").doc(P.cur.mid).get().catch(()=>null);
+    if(!s||!s.exists||s.data().st==="done"){P.cur=null;Profile.save();Menu.render();return;}
+    start(Object.assign({id:s.id},s.data()),P.cur.me,true);
+  }
+  return {init,panelHTML,handle,status,resume,myName:()=>myNameStr,setMyName:n=>{myNameStr=n||myNameStr;},ready:()=>ready};
+})();
+
+/* ---------- Start ---------- */
+Game.onEnd=res=>{const P=Profile.get();if(res.mode==="ai"){res.won?P.stats.w++:P.stats.l++;}else{res.won?P.stats.ow++:P.stats.ol++;}if(res.won)P.packs.bonus=Math.min(20,P.packs.bonus+1);Profile.save();};
+Game.onExit=()=>Menu.open();
+$("menu").addEventListener("click",e=>Menu.onClick(e));
+$("menu").addEventListener("input",e=>{if(e.target.id==="dname")e.target.dataset.dirty="1";});
+(async()=>{
+  Game.layout();
+  await Profile.init(null,null); Menu.open("start");
+  const {db,uid}=await Online.init();
+  if(db&&uid){await Profile.init(db,uid);}
+  Menu.render();
+})();
+
+</script>
+</html>
