@@ -1,14 +1,11 @@
-/* Firebase-Konfiguration für den Online-Modus.
-   Firebase-Konsole → Projekteinstellungen → „Meine Apps“ → Web-App → Konfiguration.
-   Diese Werte sind öffentliche Kennungen (keine Passwörter); geschützt wird die Datenbank durch database.rules.json.
-   Solange hier null steht, läuft die Seite nur gegen den Computer. */
-window.FIREBASE_CONFIG = null;
-/* Beispiel:
+/* Firebase-Konfiguration für den Online-Modus (öffentliche Kennungen, keine Passwörter).
+   Geschützt wird die Datenbank durch die Regeln in database.rules.json. */
 window.FIREBASE_CONFIG = {
-  apiKey: "…",
-  authDomain: "dein-projekt.firebaseapp.com",
-  databaseURL: "https://dein-projekt-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "dein-projekt",
-  appId: "…"
+  apiKey: "AIzaSyD0pQi-fnZRmXqNMqOG2Mdza4qGpmdFSfI",
+  authDomain: "lehrerzimmer-arena.firebaseapp.com",
+  databaseURL: "https://lehrerzimmer-arena-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "lehrerzimmer-arena",
+  storageBucket: "lehrerzimmer-arena.firebasestorage.app",
+  messagingSenderId: "301645277760",
+  appId: "1:301645277760:web:9813e9ff5a8e9bdd1c0da5"
 };
-*/
