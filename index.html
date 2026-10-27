@@ -395,6 +395,235 @@ button.tile{cursor:pointer}button.tile:hover{outline:3px solid var(--gold)}
 .aform.inline>b,.aform.inline>.warn{grid-column:1/-1}
 .zpick2.wz span{font-size:12px}
 .linkb{border:0;background:none;font:inherit;font-weight:700;font-size:13px;color:var(--pen);cursor:pointer;padding:0 0 0 6px;text-decoration:underline}
+
+/* ===== Menü 3: Tafel-Look, Icon-Leiste, Kartenfächer, Handy zuerst ===== */
+#menu{--tafel:#173a33;--tafel2:#0d1d24;--chalk-2:rgba(244,241,230,.72);background:radial-gradient(120% 80% at 15% 0%,#21483f 0%,var(--tafel) 38%,var(--tafel2) 100%)}
+#menu::before{inset:0;filter:blur(3px) saturate(.9);opacity:.07}
+#menu::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(60% 40% at 85% 10%,rgba(217,164,65,.14),transparent 70%),radial-gradient(50% 35% at 0% 100%,rgba(198,47,40,.12),transparent 70%)}
+#menu .bar{gap:12px;padding-top:max(10px,env(safe-area-inset-top,0px));padding-bottom:8px;flex-wrap:nowrap}
+#menu .brand{background:none;color:var(--chalk);padding:0;font-size:22px;white-space:nowrap}
+#menu .brand em{color:#ff7b6e}#menu .brand small{color:var(--gold);font-size:12px}
+#menu .tabs{background:rgba(8,18,22,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(244,241,230,.12);margin:0 auto;gap:2px}
+#menu .tabs button{position:relative;display:flex;align-items:center;gap:7px;color:var(--chalk-2);font-size:14px;padding:8px 14px;transition:background .15s,color .15s}
+#menu .tabs button:hover{color:var(--chalk)}
+#menu .tabs button[aria-current="page"]{background:var(--paper);color:var(--ink)}
+#menu .tabs .ico{width:18px;height:18px}
+#menu .tabs .nb{position:absolute;top:2px;right:4px;min-width:17px;height:17px;border-radius:9px;background:var(--pen);color:#fff;font-style:normal;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px;box-sizing:border-box;box-shadow:0 0 0 2px var(--tafel2)}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-4px}
+#menu .who{background:none;padding:0;font-size:14px}
+.me{position:relative}
+.me summary{list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(8,18,22,.55);border:1px solid rgba(244,241,230,.14);color:var(--chalk);border-radius:999px;padding:4px 12px 4px 4px;font-weight:700}
+.me summary::-webkit-details-marker{display:none}
+.me.plain{display:flex;align-items:center;gap:8px;color:var(--chalk);font-weight:700}.me.plain .mini{color:var(--chalk-2)}
+.me .nm{max-width:12ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--c,var(--pen));color:#fff;font-family:var(--f-display);font-weight:800;font-size:15px;flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.me .pop{position:absolute;right:0;top:calc(100% + 8px);z-index:20;background:var(--paper);color:var(--ink);border-radius:14px;padding:14px;display:grid;gap:6px;min-width:220px;box-shadow:0 18px 40px -12px rgba(0,0,0,.6)}
+.me .pop .btn{margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px}
+#menu .view{gap:16px;padding-top:8px;grid-auto-rows:max-content}
+#menu .panel,#menu .hero3,#menu .qc{background:var(--paper);border-radius:20px;box-shadow:0 22px 44px -26px rgba(0,0,0,.8);padding:20px}
+#menu .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:14px;min-height:44px;box-sizing:border-box;transition:transform .08s,filter .15s}
+#menu .btn:hover:not(:disabled){filter:brightness(1.05)}
+#menu .btn.sm{min-height:36px;padding:6px 12px;font-size:13.5px;border-radius:11px}
+#menu .btn.big{min-height:52px;font-size:16px;padding:12px 20px}
+#menu .btn.wide{width:100%}
+#menu .btn.light{background:#eef3ef;color:var(--ink)}
+#menu .btn.ghost2{background:transparent;box-shadow:inset 0 0 0 2px var(--line)}
+#menu .btn.pri{background:linear-gradient(180deg,#d8443c,var(--pen));box-shadow:0 4px 0 #8f1d18}
+#menu .btn.pri:active{box-shadow:0 1px 0 #8f1d18}
+#menu .linkb{color:var(--pen);font-size:14px;padding:0}
+#menu h2{font-family:var(--f-display);font-size:22px;margin:0 0 6px;letter-spacing:-.02em;line-height:1.1}
+#menu h3{font-family:var(--f-display);font-size:17px;margin:20px 0 10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+#menu .mini{font-size:13px;color:var(--ink-2);margin:0}
+#menu .phead{margin-bottom:12px;align-items:flex-start}
+.pill.live{background:var(--ok)}.pill.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#bff5cf;margin-right:5px;vertical-align:1px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:#efe9dc;border-radius:999px;padding:5px 11px;font-size:13px}
+.chips.hs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;margin-left:-2px}.chips.hs::-webkit-scrollbar{display:none}
+.chips .chipb{white-space:nowrap;min-height:38px}
+.chipb .n{font-weight:400;opacity:.75;font-size:12px;margin-left:3px}
+details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+details.more summary{cursor:pointer;font-weight:700;color:var(--ink-2);list-style:none;display:flex;align-items:center;gap:6px}
+details.more summary::before{content:"›";display:inline-block;font-size:20px;line-height:1;transition:transform .15s}
+details.more[open] summary::before{transform:rotate(90deg)}
+details.more p,details.more ul{color:var(--ink-2);line-height:1.5;max-width:70ch}
+
+/* Fächer aus Karten */
+.fan{position:relative;display:block;width:calc(var(--w)*2.1);height:calc(var(--h)*1.08);flex:none}
+.fan .fc{position:absolute;left:50%;top:4%;width:var(--w);height:var(--h);margin-left:calc(var(--w)/-2);transform:translateX(calc(var(--i)*var(--w)*.52)) rotate(calc(var(--i)*9deg)) translateY(calc(var(--i)*var(--i)*6px));transform-origin:50% 120%;filter:drop-shadow(0 10px 14px rgba(0,0,0,.35));transition:transform .25s}
+.fan .fc .mc{border-radius:10px;overflow:hidden}
+button:hover>.fan .fc,.deckshow:hover .fan .fc{transform:translateX(calc(var(--i)*var(--w)*.6)) rotate(calc(var(--i)*12deg)) translateY(calc(var(--i)*var(--i)*8px - 4px))}
+
+/* Start */
+.hero3{position:relative;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:center;background:linear-gradient(135deg,var(--paper) 55%,color-mix(in srgb,var(--c) 18%,var(--paper)))!important}
+.hero3 h1{font-family:var(--f-display);font-size:clamp(30px,6vw,48px);line-height:1;margin:6px 0 10px;letter-spacing:-.03em}
+.hero3 .lead{font-size:16px}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.deckshow{border:0;background:none;font:inherit;color:inherit;cursor:pointer;display:grid;justify-items:center;gap:8px;padding:6px}
+.deckshow .dl{display:grid;justify-items:center;text-align:center;gap:2px}
+.deckshow .dl b{font-family:var(--f-display);font-size:18px}.deckshow .dl>span{font-size:13px;color:var(--ink-2)}
+.deckshow em{font-style:normal;font-weight:700}
+.quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.qc{display:flex;align-items:center;gap:14px;border:0;font:inherit;color:var(--ink);text-align:left;min-width:0;padding:16px!important}
+button.qc{cursor:pointer;transition:transform .15s}button.qc:hover{transform:translateY(-2px)}
+.qc .qt{display:grid;gap:2px;min-width:0}.qc .qt b{font-family:var(--f-display);font-size:17px;line-height:1.15}.qc .qt span{font-size:13px;color:var(--ink-2)}
+.qc.ready{background:linear-gradient(135deg,#fff7e2,var(--paper))!important;box-shadow:0 0 0 2px var(--gold),0 22px 44px -26px rgba(0,0,0,.8)!important}
+.qc.ready .qt span{color:#9a6a12;font-weight:700}
+.qc.stats{justify-content:space-around;text-align:center;gap:6px}
+.qc.stats div{display:grid;gap:2px}.qc.stats b{font-family:var(--f-display);font-size:26px;font-variant-numeric:tabular-nums}.qc.stats span{font-size:11.5px;color:var(--ink-2);line-height:1.2}
+.ring{position:relative;width:54px;height:54px;flex:none;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}.ring circle{fill:none;stroke:#e7e1d2;stroke-width:5}.ring circle.v{stroke:var(--pen);stroke-linecap:round}
+.ring b{font-family:var(--f-display);font-size:14px}
+.banner.slim{display:flex;align-items:center;gap:12px;background:rgba(217,164,65,.16);border:1px solid rgba(217,164,65,.5);color:var(--chalk);border-radius:16px;padding:10px 12px 10px 14px}
+.banner.slim span{flex:1;font-size:14px;line-height:1.35}.banner.slim .ico{color:var(--gold)}
+.banner .aform.inline{margin:0;border:0;padding:0;background:none}
+.steps{list-style:none;margin:8px 0 10px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.steps li{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:start;background:#f3eee2;border-radius:14px;padding:12px}
+.steps i{grid-row:span 2;font-style:normal;width:30px;height:30px;border-radius:50%;background:var(--pen);color:#fff;display:grid;place-items:center;font-family:var(--f-display);font-weight:800}
+.steps b{font-family:var(--f-display)}.steps span{font-size:13.5px;color:var(--ink-2);line-height:1.4}
+
+/* Packs */
+.packart{position:relative;display:grid;place-items:center;align-content:center;gap:4px;width:var(--pw,56px);height:calc(var(--pw,56px)*1.38);border-radius:calc(var(--pw,56px)*.1);overflow:hidden;flex:none;
+  background:linear-gradient(160deg,#283d6b 0%,#1a2747 55%,#2a1f45 100%);box-shadow:inset 0 0 0 calc(var(--pw,56px)*.03) #f2c14e,0 10px 22px -10px rgba(0,0,0,.6);color:#fff;text-align:center}
+.packart::before{content:"";position:absolute;left:0;right:0;top:9%;height:5%;background:repeating-linear-gradient(90deg,#f2c14e 0 6%,transparent 6% 9%);opacity:.7}
+.packart::after{content:"";position:absolute;left:0;right:0;bottom:9%;height:5%;background:repeating-linear-gradient(90deg,#f2c14e 0 6%,transparent 6% 9%);opacity:.7}
+.pa-foil{position:absolute;inset:-50%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.35) 48%,transparent 56%);transform:translateX(-60%)}
+@media (prefers-reduced-motion:no-preference){.packart .pa-foil{animation:foil 3.2s ease-in-out infinite}}
+@keyframes foil{0%,55%{transform:translateX(-60%)}100%{transform:translateX(60%)}}
+.pa-logo{position:relative;font-family:var(--f-display);font-weight:800;font-size:calc(var(--pw,56px)*.16);line-height:1;letter-spacing:-.02em}.pa-logo em{font-style:normal;color:#f2c14e;display:block}
+.pa-sub{position:relative;font-family:var(--f-chalk);font-size:calc(var(--pw,56px)*.085);color:#f2c14e}
+.packart.sm{--pw:52px}.packart.sm .pa-sub{display:none}
+.packart.lg{--pw:min(46vw,190px)}
+.packart.empty{filter:grayscale(.85) brightness(.85)}
+.packhero{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.packbtn{position:relative;border:0;background:none;padding:0;cursor:pointer;border-radius:20px;transition:transform .2s}
+.packbtn:not(:disabled):hover{transform:translateY(-4px) rotate(-1.5deg)}
+.packbtn:disabled{cursor:default}
+@media (prefers-reduced-motion:no-preference){.packbtn:not(:disabled) .packart{animation:bob 3s ease-in-out infinite}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.pcount{position:absolute;right:-10px;top:-10px;min-width:38px;height:38px;border-radius:19px;background:var(--pen);color:#fff;font-family:var(--f-display);font-weight:800;font-size:19px;display:grid;place-items:center;box-shadow:0 0 0 3px var(--paper)}
+.pinfo{flex:1;min-width:230px;display:grid;gap:10px;justify-items:start}.pinfo h2,.pinfo .lead{margin:0}
+.best{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}.best .chips{margin-top:8px}
+.reveal .stage5{display:grid;grid-template-columns:repeat(auto-fill,var(--w));justify-content:center;gap:12px;margin:8px 0 16px}
+.reveal .flip{width:var(--w);height:var(--h)}
+.reveal .flip .backside{width:100%;height:100%;border-radius:12px;background:linear-gradient(160deg,#283d6b,#1a2747);display:grid;place-items:center;box-shadow:0 10px 20px -10px rgba(0,0,0,.5)}
+.reveal .flip .backside span{border:3px solid #f2c14e;border-radius:10px;width:80%;height:86%;display:grid;place-content:center;text-align:center;color:#fff;font-family:var(--f-display);font-weight:800;font-size:calc(var(--w)*.12)}
+.reveal .flip .backside em{font-style:normal;color:#f2c14e;display:block}
+@media (prefers-reduced-motion:no-preference){.reveal button.flip .backside{animation:wiggle 2.4s ease-in-out infinite}.reveal button.flip:nth-child(2) .backside{animation-delay:.2s}.reveal button.flip:nth-child(3) .backside{animation-delay:.4s}.reveal button.flip:nth-child(4) .backside{animation-delay:.6s}.reveal button.flip:nth-child(5) .backside{animation-delay:.8s}}
+@keyframes wiggle{0%,85%,100%{transform:none}90%{transform:rotate(-2deg) scale(1.02)}95%{transform:rotate(2deg) scale(1.02)}}
+.row.center{justify-content:center}
+
+/* Decks */
+.dscroll{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.dscroll .dtile{flex:0 0 172px;scroll-snap-align:start}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.dtile{display:grid;gap:8px;align-content:start;border-radius:16px;background:var(--card);border:2px solid var(--line);padding:10px;position:relative;overflow:hidden}
+.dtile::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--c)}
+.dtile.on{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
+.dcov{position:relative;border:0;border-radius:12px;background:color-mix(in srgb,var(--c) 14%,#f4efe3);display:grid;place-items:center;padding:12px 0 6px;cursor:pointer;min-height:120px}
+.dcov .act{position:absolute;left:8px;top:8px;background:var(--c);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px}
+.dinf{display:grid;gap:2px;padding:0 4px}.dinf b{font-family:var(--f-display);font-size:16px}.dinf span{font-size:12.5px;color:var(--ink-2)}
+.dinf .warn,.dinf .ok{font-size:12.5px}
+.dact{display:flex;gap:6px;flex-wrap:wrap;padding:0 4px 4px}
+.editor .edbar{position:sticky;top:-8px;z-index:4;margin:-20px -20px 0;padding:14px 20px 12px;background:color-mix(in srgb,var(--c) 10%,var(--paper));border-bottom:1px solid var(--line);border-radius:20px 20px 0 0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.edtop{display:flex;gap:8px;align-items:center}
+.edtop input{flex:1;min-width:0;width:0;font:inherit;font-family:var(--f-display);font-weight:800;font-size:18px;padding:7px 10px;border:2px solid var(--line);border-radius:10px;background:var(--card)}
+.meters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.meter{display:grid;justify-items:center;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px 4px;text-align:center}
+.meter b{font-family:var(--f-display);font-size:19px;font-variant-numeric:tabular-nums}.meter span{font-size:11.5px;color:var(--ink-2)}
+.meter.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 9%,var(--card))}.meter.ok b{color:var(--ok)}
+.editor .status{margin:0;padding:6px 10px;font-size:13.5px}
+.zpick3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0 14px}
+.zb3{border:2px solid var(--line);border-radius:14px;background:var(--card);padding:10px 12px 10px 14px;font:inherit;text-align:left;cursor:pointer;display:grid;gap:4px;min-width:0;position:relative;overflow:hidden;color:var(--ink)}
+.zb3::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c)}
+.zb3 b{font-family:var(--f-display);font-size:15.5px;line-height:1.1}
+.zb3 span{font-size:12.5px;color:var(--ink-2);line-height:1.35}.zb3 i{font-style:normal;font-weight:700;color:var(--ink)}
+.zb3[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 11%,var(--card));box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
+.zb3[aria-pressed="true"] b::after{content:" ✓";color:var(--c)}
+.zpick3.small .zb3 span{font-size:12px}
+.cg.fit{gap:10px;justify-content:flex-start}
+.cg.fit .mc{border-radius:10px}
+.pk.on .mc{outline-offset:1px}
+.pk .badge2{top:6px;right:auto;left:50%;transform:translateX(-50%);white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+
+/* Album */
+.ahead{display:flex;align-items:center;gap:14px;margin-bottom:12px}.ahead>div{flex:1;min-width:0;display:grid;gap:4px}.ahead h2{margin:0}
+.ahead .ring{width:64px;height:64px}
+.ac{border:0;padding:0;background:none;cursor:pointer;border-radius:10px;transition:transform .15s}button.ac:hover{transform:translateY(-3px)}
+.ac .cnt{top:6px;right:6px}
+.mzoom{position:fixed;inset:0;z-index:90;background:rgba(6,14,18,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-content:center;justify-items:center;gap:16px;padding:20px;cursor:zoom-out}
+.mzoom .mc{border-radius:16px;box-shadow:0 30px 60px -20px rgba(0,0,0,.8)}
+@media (prefers-reduced-motion:no-preference){.mzoom .mc{animation:pop .3s ease-out}}
+
+/* Spielen */
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.mode{display:grid;gap:8px;align-content:start}
+.mode .lead{margin:0 0 4px}
+.mico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#f0e9d9;color:var(--pen)}.mico .ico{width:28px;height:28px}
+#onlinepanel .mico{color:var(--ok)}
+#onlinepanel h3{margin-top:12px}
+.wait{display:flex;gap:10px;align-items:center}
+.spin{width:18px;height:18px;border-radius:50%;border:3px solid #e2dccd;border-top-color:var(--ok);flex:none}
+@media (prefers-reduced-motion:no-preference){.spin{animation:spin 1s linear infinite}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Regeln */
+.steps.big{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cyc .ar{color:var(--ink-2);font-weight:400}
+.cyc .s{background:color-mix(in srgb,var(--c) 14%,#fff);border-radius:999px;padding:4px 10px}
+.zrules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.zr{background:var(--card);border:2px solid var(--line);border-left:6px solid var(--c);border-radius:14px;padding:12px 14px}
+.zr b{font-family:var(--f-display);font-size:16px}.zr p{margin:6px 0 0;font-size:14px;line-height:1.45;color:var(--ink-2)}.zr i{font-style:normal;font-weight:700;color:var(--ink)}
+
+/* Willkommen */
+.welcome3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;align-items:center;max-width:1040px;margin:0 auto;width:100%;min-height:calc(100% - 20px)}
+.wcopy{display:grid;justify-items:center;text-align:center;gap:8px;color:var(--chalk)}
+.wcopy .wt{font-family:var(--f-display);font-size:clamp(34px,6vw,58px);line-height:.95;margin:0;letter-spacing:-.03em}.wcopy .wt em{font-style:normal;color:#ff7b6e}
+.wcopy .tag{font-family:var(--f-chalk);font-size:20px;color:var(--gold);margin:0 0 10px}
+.wform{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.wform h2{margin-top:6px!important}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:#ece5d6;border-radius:14px;padding:4px;gap:4px}
+.seg button{border:0;background:none;font:inherit;font-weight:700;font-size:14px;padding:10px 6px;border-radius:10px;cursor:pointer;color:var(--ink-2)}
+.seg button[aria-selected="true"]{background:var(--paper);color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.welcome3 .zpick3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.aform{max-width:none;grid-template-columns:minmax(0,1fr)}.aform .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.aform input{min-width:0;width:100%;box-sizing:border-box}
+#menu.noprof .bar{display:none}
+#menu.noprof .view{padding-top:max(20px,env(safe-area-inset-top,0px));align-content:safe center}
+
+@media (min-width:861px){#menu .tabs .nb{position:static;margin-left:-2px;box-shadow:none}.hero3 .deckshow .fan{transform:scale(1.25);margin:22px 0 18px}}
+@media (max-width:860px){
+  #menu .bar{padding-left:16px;padding-right:16px}
+  #menu .brand{font-size:20px}
+  #menu .tabs{position:fixed;left:0;right:0;bottom:0;margin:0;border:0;border-top:1px solid rgba(244,241,230,.12);border-radius:0;background:rgba(8,18,22,.92);display:grid;grid-template-columns:repeat(6,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:30}
+  #menu .tabs button{flex-direction:column;gap:3px;padding:6px 0 4px;font-size:11px;border-radius:12px;min-height:50px;justify-content:center}
+  #menu .tabs button[aria-current="page"]{background:rgba(244,241,230,.12);color:var(--chalk)}
+  #menu .tabs button[aria-current="page"] .ico{color:var(--gold)}
+  #menu .tabs .ico{width:22px;height:22px}
+  #menu .tabs .nb{top:2px;right:calc(50% - 22px)}
+  #menu .who{margin-left:auto}
+  #menu .view{padding:4px 12px calc(86px + env(safe-area-inset-bottom,0px))}
+  #menu .panel,#menu .hero3{padding:16px;border-radius:18px}
+  .hero3{grid-template-columns:1fr;gap:6px}
+  .hero3 .deckshow{grid-row:1;padding:0}
+  .hero3 .hcopy{text-align:center}.hero3 .cta{justify-content:center}
+  .hero3 .cta .btn{flex:1 1 100%}
+  .hero3 h1{font-size:32px}
+  .quick{grid-template-columns:1fr 1fr}.quick .qc.stats{grid-column:1/-1}
+  .qc{flex-direction:column;align-items:flex-start;gap:10px}
+  .qc.stats{flex-direction:row}
+  .steps,.steps.big{grid-template-columns:1fr}
+  .modes,.zrules{grid-template-columns:1fr}
+  .zpick3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .welcome3{grid-template-columns:minmax(0,1fr);gap:6px;min-height:0}
+  .wcopy .fan{display:none}
+  .wcopy .tag{margin:0 0 6px;font-size:17px}
+  .seg button{font-size:13px;white-space:nowrap;padding:10px 2px}
+  .welcome3 .zb3 span:last-child{display:none}
+  .packhero{flex-direction:column;align-items:center;text-align:center}.pinfo{justify-items:center}.pinfo .chips{justify-content:center}
+  .editor .edbar{margin:-16px -16px 0;padding:12px 16px 10px;border-radius:18px 18px 0 0}
+  .dgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .dtile .fan{transform:scale(.86)}
+  .me .nm{max-width:9ch}
+}
+@media (max-width:400px){.dgrid{grid-template-columns:1fr}.dgrid .dtile{grid-template-columns:auto 1fr;align-items:center}.dgrid .dtile .dcov{grid-row:span 2;min-height:0;padding:8px}.dgrid .dtile .dact{grid-column:2}}
 </style>
 <script src="config.js"></script>
 <script>window.LZ_SITE={};window.__fbReady=new Promise(r=>window.__fbResolve=r);setTimeout(()=>window.__fbResolve(null),15000);
@@ -1704,157 +1933,228 @@ function miniCard(id,sc=0.7,o={}){return `<div class="mc" style="width:${200*sc}
 function energyCard(e,sc=0.7){return `<div class="mc" style="width:${200*sc}px;height:${280*sc}px"><div style="transform:scale(${sc});transform-origin:0 0;width:200px;height:280px"><div class="card full sup en-${(e.rarity||"").replace(/\W/g,"")}" style="--c:var(--gold)"><div class="in"><div class="top"><span class="nm">${esc(e.name)}</span></div><div class="fach">Energiekarte · ${esc(e.rarity)}</div><div class="art">${BOLT.replace('<svg','<svg style="width:60px;height:60px;fill:var(--c)"')}</div><div class="txt">Sammelmotiv. Alle Energiekarten wirken gleich: 1 Energie.</div></div></div></div></div>`;}
 
 /* ---------- Menü ---------- */
+const ICON={
+  start:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  spielen:'<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>',
+  decks:'<rect x="8" y="3" width="12" height="16" rx="2"/><path d="M5 6.5V19a2 2 0 0 0 2 2h9"/>',
+  packs:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',
+  album:'<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H20v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H20M9 7.5h7"/>',
+  regeln:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 17v.01"/>',
+  bot:'<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/>',
+  online:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/>',
+  save:'<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
+  out:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>'
+};
+const ico=(k,c="")=>`<svg class="ico ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]||""}</svg>`;
+// Kartengröße so wählen, dass die Spalten die Breite genau füllen (Handy: 3 Karten nebeneinander)
+function fitScale(minW=118,maxW=150,gap=10){
+  const v=$("menu").querySelector(".view"),w=Math.min(v.clientWidth||innerWidth,1180)-(innerWidth<860?58:80);
+  const cols=Math.max(3,Math.floor((w+gap)/(minW+gap)));
+  return Math.min(maxW,(w-(cols-1)*gap)/cols)/200;
+}
+function packArt(cls=""){return `<span class="packart ${cls}" aria-hidden="true"><span class="pa-foil"></span><span class="pa-logo">Lehrer<em>zimmer</em></span><span class="pa-sub">Booster · 5 Karten</span></span>`;}
+function ring(f,label=""){const r=20,c=2*Math.PI*r;return `<span class="ring" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="${r}"/><circle class="v" cx="24" cy="24" r="${r}" stroke-dasharray="${(c*Math.max(0,Math.min(1,f))).toFixed(1)} ${c.toFixed(1)}"/></svg><b>${label||Math.round(f*100)+"%"}</b></span>`;}
+// Drei Lehrkräfte eines Decks als Fächer (Schulleitung und starke Karten zuerst)
+function fan(d,sc=0.42){const ts=d.ids.filter(id=>byId(id)).map(byId).sort((a,b)=>(b.legend?1:0)-(a.legend?1:0)||b.hp-a.hp).slice(0,3);
+  return `<span class="fan" style="--w:${Math.round(200*sc)}px;--h:${Math.round(280*sc)}px">${ts.map((c,i)=>`<span class="fc" style="--i:${i-(ts.length-1)/2}">${miniCard(c.id,sc)}</span>`).join("")}</span>`;}
+
 const Menu=(()=>{
   const TABS=[["start","Start"],["spielen","Spielen"],["decks","Decks"],["packs","Packs"],["album","Album"],["regeln","Regeln"]];
-  let tab="start",edit=null,lastPack=null,filt="ALL",albumF="t";
+  let tab="start",edit=null,lastPack=null,filt="ALL",albumF="t",showLink=false,lastW=0;
   const el=()=>$("menu");
   function open(t){tab=t||tab;document.body.classList.remove("ingame");render();}
   let wz="MINT",wmode="new",wmsg="",wbusy=false;
   const AUTH=()=>window.LZ_SITE&&window.LZ_SITE.auth;
-  function zweigPick(){return `<div class="zpick2 wz">${ZWEIG_KEYS.map(z=>`<button class="zb2" data-wz="${z}" aria-pressed="${z===wz}" style="--c:var(${SUBJ[z].v})"><b>${esc(ZWEIGE[z].name)}</b><span>${esc(ZWEIGE[z].perk.name)}: ${esc(ZWEIGE[z].perk.text)}</span><span>Joker ${esc(ZWEIGE[z].joker.name)}</span></button>`).join("")}</div>`;}
+  const zc=z=>`var(${SUBJ[z].v})`,zn=z=>ZWEIGE[z].name.split(" ")[0];
+  function zweigPick(){return `<div class="zpick3">${ZWEIG_KEYS.map(z=>`<button type="button" class="zb3" data-wz="${z}" aria-pressed="${z===wz}" style="--c:${zc(z)}"><b>${esc(ZWEIGE[z].name)}</b><span><i>${esc(ZWEIGE[z].perk.name)}</i> ${esc(ZWEIGE[z].perk.text)}</span><span><i>Joker ${esc(ZWEIGE[z].joker.name)}</i> ${esc(ZWEIGE[z].joker.text)}</span></button>`).join("")}</div>`;}
   function vWelcome(){
     const A=AUTH();
-    const tabs=A?`<div class="chips"><button class="chipb" data-wm="new" aria-pressed="${wmode==="new"}">Konto erstellen</button><button class="chipb" data-wm="login" aria-pressed="${wmode==="login"}">Anmelden</button><button class="chipb" data-wm="guest" aria-pressed="${wmode==="guest"}">Ohne Konto spielen</button></div>`:"";
-    const form=!A||wmode==="guest"?`<p class="lead">Wähle deinen Zweig. Du bekommst sein Startdeck geschenkt. Alle anderen Lehrkräfte sammelst du über Packs.${A?" Ohne Konto bleibt dein Fortschritt nur in diesem Browser.":""}</p>${zweigPick()}<div class="row" style="margin-top:12px"><button class="btn pri big" data-go="wstart">Mit ${esc(ZWEIGE[wz].name.split(" ")[0])} loslegen</button></div>`
-      :wmode==="login"?`<p class="lead">Melde dich mit deinem Namen und Passwort an. Deine Sammlung und Decks sind auf jedem Gerät gleich.</p>
-        <form class="aform" id="loginform"><label>Name<input id="lname" autocomplete="username" maxlength="20" required></label><label>Passwort<input id="lpass" type="password" autocomplete="current-password" required></label><button class="btn pri big" ${wbusy?"disabled":""}>Anmelden</button></form>`
-      :`<p class="lead">Mit Konto ist deine Sammlung gespeichert und auf jedem Gerät da. Wähle deinen Zweig: Du bekommst nur dessen Startdeck, alles andere erspielst du dir.</p>
-        <form class="aform" id="regform"><label>Name<input id="rname" autocomplete="username" maxlength="20" required placeholder="z. B. Joshua"></label><label>Passwort<input id="rpass" type="password" autocomplete="new-password" minlength="6" required placeholder="mindestens 6 Zeichen"></label><label>Passwort wiederholen<input id="rpass2" type="password" autocomplete="new-password" minlength="6" required></label>
-        <span class="eyebrow" style="margin-top:6px">Dein Zweig</span>${zweigPick()}<button class="btn pri big" ${wbusy?"disabled":""}>Konto erstellen und loslegen</button></form>`;
-    return `<section class="panel welcome"><h1 class="wt">Lehrer<em>zimmer</em> Arena</h1><p class="lead">Das Sammelkartenspiel der FOS Holzkirchen.</p>${tabs}${form}${wmsg?`<p class="warn">${esc(wmsg)}</p>`:""}</section>`;
+    const seg=A?`<div class="seg" role="tablist">${[["new","Konto erstellen"],["login","Anmelden"],["guest","Ohne Konto"]].map(([k,l])=>`<button type="button" role="tab" data-wm="${k}" aria-selected="${wmode===k}">${l}</button>`).join("")}</div>`:"";
+    const start=`<button class="btn pri big wide" data-go="wstart">Mit ${esc(zn(wz))} loslegen</button>`;
+    const form=!A||wmode==="guest"?`<h2>Wähle deinen Zweig</h2><p class="lead">Du bekommst sein Startdeck geschenkt. Alle anderen Lehrkräfte sammelst du über Packs.${A?" Ohne Konto bleibt dein Fortschritt nur in diesem Browser.":""}</p>${zweigPick()}${start}`
+      :wmode==="login"?`<h2>Willkommen zurück</h2><p class="lead">Deine Sammlung und Decks sind auf jedem Gerät gleich.</p>
+        <form class="aform" id="loginform"><label>Name<input id="lname" autocomplete="username" maxlength="20" required></label><label>Passwort<input id="lpass" type="password" autocomplete="current-password" required></label><button class="btn pri big wide" ${wbusy?"disabled":""}>Anmelden</button></form>`
+      :`<h2>Konto erstellen</h2><p class="lead">Mit Konto ist deine Sammlung gespeichert und auf jedem Gerät da. Du bekommst das Startdeck deines Zweigs, alles andere erspielst du dir.</p>
+        <form class="aform" id="regform"><label>Name<input id="rname" autocomplete="username" maxlength="20" required placeholder="z. B. Joshua"></label><div class="two"><label>Passwort<input id="rpass" type="password" autocomplete="new-password" minlength="6" required placeholder="mind. 6 Zeichen"></label><label>Wiederholen<input id="rpass2" type="password" autocomplete="new-password" minlength="6" required></label></div>
+        <span class="eyebrow">Dein Zweig</span>${zweigPick()}<button class="btn pri big wide" ${wbusy?"disabled":""}>Konto erstellen und loslegen</button></form>`;
+    const art=CARDS.filter(c=>c.legend).slice(0,1).concat(CARDS.filter(c=>!c.legend).slice(0,2)).map(c=>c.id);
+    return `<section class="welcome3"><div class="wcopy"><h1 class="wt">Lehrer<em>zimmer</em> Arena</h1><p class="tag">Das Sammelkartenspiel der FOS Holzkirchen</p>
+      <span class="fan big" style="--w:110px;--h:154px">${art.map((id,i)=>`<span class="fc" style="--i:${i-1}">${miniCard(id,0.55)}</span>`).join("")}</span></div>
+      <div class="panel wform">${seg}${form}${wmsg?`<p class="warn" role="alert">${esc(wmsg)}</p>`:""}</div></section>`;
   }
   function render(){
-    const m=el();
+    const m=el();lastW=innerWidth;
     if(!Profile.get()){m.classList.add("noprof");m.querySelector(".tabs").innerHTML="";m.querySelector(".view").innerHTML=vWelcome();m.querySelector(".who").innerHTML="";return;}
     m.classList.remove("noprof");
-    m.querySelector(".tabs").innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" aria-current="${k===tab?"page":"false"}">${l}</button>`).join("");
+    const left=packsLeft();
+    m.querySelector(".tabs").innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" aria-current="${k===tab?"page":"false"}">${ico(k)}<span>${l}</span>${k==="packs"&&left?`<i class="nb" aria-label="${left} Packs bereit">${left}</i>`:""}</button>`).join("");
     const v=m.querySelector(".view");
+    v.dataset.view=tab;
     v.innerHTML=({start:vStart,spielen:vPlay,decks:vDecks,packs:vPacks,album:vAlbum,regeln:vRules}[tab]||vStart)();
     m.querySelector(".who").innerHTML=whoHTML();
   }
-  function whoHTML(){const P=Profile.get(),n=Online.myName(),A=AUTH();
-    if(A&&A.info.account) return `<span class="dot"></span><b>${esc(n||"Du")}</b><span class="mini">${P.stats.w+P.stats.ow} Siege · Konto</span><button class="linkb" data-go="logout">Abmelden</button>`;
-    if(A) return `<span class="dot" style="background:var(--gold)"></span><b>Gast</b><span class="mini">nur in diesem Browser</span><button class="linkb" data-go="toaccount">Konto erstellen</button>`;
-    return `<span class="dot"></span><b>${esc(n||"Du")}</b><span class="mini">${P.stats.w} Siege · ${Profile.synced()?"Profil gespeichert":"nur in diesem Browser"}</span>`;}
+  function whoHTML(){const P=Profile.get(),n=Online.myName(),A=AUTH(),wins=P.stats.w+P.stats.ow,c=zc(P.zweig||activeDeck().zweig);
+    const av=t=>`<span class="av" style="--c:${c}">${esc((t||"?").trim().charAt(0).toUpperCase()||"?")}</span>`;
+    if(A&&A.info.account) return `<details class="me"><summary aria-label="Profil">${av(n)}<span class="nm">${esc(n||"Du")}</span></summary><div class="pop"><b>${esc(n||"Du")}</b><span class="mini">Konto · ${wins} ${wins===1?"Sieg":"Siege"}</span><span class="mini">Sammlung auf allen Geräten gespeichert</span><button class="btn" data-go="logout">${ico("out")} Abmelden</button></div></details>`;
+    if(A) return `<details class="me"><summary aria-label="Profil">${av("?")}<span class="nm">Gast</span></summary><div class="pop"><b>Gast</b><span class="mini">Dein Fortschritt liegt nur in diesem Browser.</span><button class="btn pri" data-go="toaccount">${ico("save")} Konto erstellen</button></div></details>`;
+    return `<span class="me plain">${av(n)}<span class="nm">${esc(n||"Du")}</span><span class="mini">${Profile.synced()?"gespeichert":"nur hier"}</span></span>`;}
   const activeDeck=()=>{const P=Profile.get();return P.decks.find(d=>d.id===P.active)||P.decks[0];};
   const packsLeft=()=>{const P=Profile.get();return P.packs.free+P.packs.bonus;};
 
   function vStart(){
-    const P=Profile.get(),d=activeDeck(),z=ZWEIGE[d.zweig],cur=P.cur;
-    const owned=CARDS.filter(c=>Profile.owns(c.id)).length;
-    return `<section class="hero"><div><h1>Lehrer<em>zimmer</em> Arena</h1><p class="lead">Das Sammelkartenspiel der FOS Holzkirchen. Bau dein Deck aus den vier Zweigen, öffne Packs und spiel gegen den Computer oder live gegen deine Klasse.</p>
-      ${AUTH()&&!AUTH().info.account?`<form class="aform inline" id="linkform"><b>Fortschritt sichern:</b> Erstelle ein Konto, dann bleibt deine Sammlung erhalten.<label>Name<input id="kname" autocomplete="username" maxlength="20" required></label><label>Passwort<input id="kpass" type="password" autocomplete="new-password" minlength="6" required></label><button class="btn pri">Konto erstellen</button>${wmsg?`<span class="warn">${esc(wmsg)}</span>`:""}</form>`:""}
-      <div class="row">${cur?`<button class="btn pri big" data-go="resume">Laufende Online-Partie fortsetzen</button>`:""}<button class="btn pri big" data-go="ai">Gegen den Computer</button><button class="btn big" data-tab="spielen">Online spielen</button></div></div>
-      <div class="deckcard" style="--c:var(${SUBJ[d.zweig].v})"><span class="eyebrow">Aktives Deck</span><b>${esc(d.name)}</b><span>${esc(z.name)} · Joker ${esc(z.joker.name)}</span>${Profile.deckIssues(d).length?`<span class="warn">${esc(Profile.deckIssues(d)[0])}</span>`:'<span class="ok">Spielbereit</span>'}<button class="btn" data-tab="decks">Deck wechseln</button></div></section>
-      <section class="tiles">
-        <button class="tile" data-tab="packs"><span class="eyebrow">Packs</span><b>${packsLeft()}</b><span>${P.packs.free} gratis heute · ${P.packs.bonus} Bonus</span></button>
-        <button class="tile" data-tab="album"><span class="eyebrow">Sammlung</span><b>${owned}/${CARDS.length}</b><span>Lehrkräfte · ${Object.keys(P.coll.s).length} Shiny</span></button>
-        <div class="tile"><span class="eyebrow">Gegen den Computer</span><b>${P.stats.w}:${P.stats.l}</b><span>Siege : Niederlagen</span></div>
-        <div class="tile"><span class="eyebrow">Online</span><b>${P.stats.ow}:${P.stats.ol}</b><span>${Online.status()}</span></div>
-      </section>`;
+    const P=Profile.get(),d=activeDeck(),bad=Profile.deckIssues(d),cur=P.cur,left=packsLeft(),n=AUTH()?(AUTH().info.account?Online.myName():""):Online.myName();
+    const owned=CARDS.filter(c=>Profile.owns(c.id)).length,shiny=Object.keys(P.coll.s).filter(k=>P.coll.s[k]>0).length;
+    const games=P.stats.w+P.stats.l+P.stats.ow+P.stats.ol,guest=AUTH()&&!AUTH().info.account;
+    const banner=guest?(showLink?`<section class="panel banner"><form class="aform inline" id="linkform"><b>${ico("save")} Fortschritt sichern</b><span class="mini">Deine Sammlung wird in das Konto übernommen.</span><label>Name<input id="kname" autocomplete="username" maxlength="20" required></label><label>Passwort<input id="kpass" type="password" autocomplete="new-password" minlength="6" required placeholder="mind. 6 Zeichen"></label><div class="row"><button class="btn pri">Konto erstellen</button><button type="button" class="btn ghost2" data-go="hidelink">Später</button></div>${wmsg?`<span class="warn" role="alert">${esc(wmsg)}</span>`:""}</form></section>`
+      :`<section class="banner slim">${ico("save")}<span><b>Du spielst als Gast.</b> Mit einem Konto ist deine Sammlung auf jedem Gerät da.</span><button class="btn pri" data-go="showlink">Konto erstellen</button></section>`):"";
+    return `${banner}
+      <section class="hero3" style="--c:${zc(d.zweig)}">
+        <div class="hcopy"><span class="eyebrow">${games?"Bereit für die nächste Stunde?":"Willkommen in der Arena"}</span><h1>${n?`Hallo ${esc(n)}!`:"Los geht's!"}</h1>
+          <p class="lead">${games?`Dein Deck <b>${esc(d.name)}</b> ist ${bad.length?"noch nicht spielbereit.":"spielbereit."}`:"Spiel deine erste Partie gegen den Computer. Das Spiel zeigt dir dabei Schritt für Schritt, was du tun kannst."}</p>
+          <div class="cta">${cur?`<button class="btn pri big" data-go="resume">${ico("online")} Online-Partie fortsetzen</button>`:""}<button class="btn ${cur?"":"pri"} big" data-go="ai">${ico("bot")} Gegen den Computer</button><button class="btn big light" data-tab="spielen">${ico("online")} Online spielen</button></div></div>
+        <button class="deckshow" data-tab="decks" aria-label="Aktives Deck ${esc(d.name)}, zu den Decks">${fan(d,0.5)}<span class="dl"><b>${esc(d.name)}</b><span>${esc(ZWEIGE[d.zweig].name)} · ${bad.length?'<em class="warn">unvollständig</em>':'<em class="ok">spielbereit</em>'}</span></span></button>
+      </section>
+      <section class="quick">
+        <button class="qc ${left?"ready":""}" data-tab="packs">${packArt("sm")}<span class="qt"><b>${left?`${left} ${left===1?"Pack":"Packs"} bereit`:"Keine Packs übrig"}</b><span>${left?"Jetzt öffnen":"Morgen gibt es 2 neue · jeder Sieg +1"}</span></span></button>
+        <button class="qc" data-tab="album">${ring(owned/CARDS.length,`${owned}`)}<span class="qt"><b>${owned} von ${CARDS.length} Lehrkräften</b><span>${shiny} Shiny · Album ansehen</span></span></button>
+        <div class="qc stats"><div><b>${P.stats.w}</b><span>Siege gegen<br>den Computer</span></div><div><b>${P.stats.ow}</b><span>Online-<br>Siege</span></div><div><b>${Online.peers()}</b><span>gerade<br>online</span></div></div>
+      </section>
+      ${games?"":`<section class="panel howto"><h2>In 30 Sekunden erklärt</h2><ol class="steps"><li><i>1</i><b>Lehrkraft spielen</b><span>Ziehe eine Lehrkraft aus deiner Hand aufs Feld.</span></li><li><i>2</i><b>Energie anlegen</b><span>Einmal pro Zug: der goldene Blitz-Knopf.</span></li><li><i>3</i><b>Angreifen</b><span>Tippe deine aktive Lehrkraft an und wähle eine Attacke.</span></li></ol><p class="mini">Wer zuerst 3 Lehrkräfte in den Feierabend schickt, gewinnt. <button class="linkb" data-tab="regeln">Alle Regeln</button></p></section>`}`;
   }
 
-  function deckPicker(){
-    const P=Profile.get();
-    return `<div class="dpick">${P.decks.map(d=>{const bad=Profile.deckIssues(d).length;return `<button class="dchip" data-pickdeck="${esc(d.id)}" aria-pressed="${d.id===P.active}" style="--c:var(${SUBJ[d.zweig].v})"><b>${esc(d.name)}</b><span>${esc(ZWEIGE[d.zweig].name.split(" ")[0])}${bad?" · unvollständig":""}</span></button>`;}).join("")}</div>`;
-  }
+  // Deck als Kachel: Fächer der stärksten Lehrkräfte, Zweigfarbe, Status
+  function deckTile(d,act){const P=Profile.get(),bad=Profile.deckIssues(d),on=d.id===P.active;
+    return `<div class="dtile ${on?"on":""}" style="--c:${zc(d.zweig)}">
+      <button class="dcov" data-pickdeck="${esc(d.id)}" aria-pressed="${on}" aria-label="${esc(d.name)} als aktives Deck wählen">${fan(d,0.34)}${on?'<span class="act">✓ Aktiv</span>':""}</button>
+      <div class="dinf"><b>${esc(d.name)}</b><span>${esc(ZWEIGE[d.zweig].name)}${d.start?" · Startdeck":""}</span>${bad.length?`<span class="warn">${esc(bad[0])}</span>`:'<span class="ok">Spielbereit</span>'}</div>
+      ${act?`<div class="dact"><button class="btn sm" data-edit="${esc(d.id)}">${ico("edit")} ${d.start?"Kopieren":"Bearbeiten"}</button>${d.start?"":`<button class="btn sm ghost2" data-del="${esc(d.id)}">Löschen</button>`}</div>`:""}</div>`;}
   function vPlay(){
-    const d=activeDeck(),bad=Profile.deckIssues(d);
-    return `<section class="panel"><h2>Dein Deck</h2>${deckPicker()}${bad.length?`<p class="warn">${esc(bad[0])}</p>`:""}</section>
-      <section class="grid2">
-        <div class="panel"><h2>Gegen den Computer</h2><p class="lead">Der Computer spielt einen zufälligen Zweig. Ein Sieg bringt dir ein Bonus-Pack.</p><button class="btn pri big" data-go="ai" ${bad.length?"disabled":""}>Partie starten</button></div>
-        <div class="panel" id="onlinepanel">${Online.panelHTML(bad.length>0)}</div>
+    const P=Profile.get(),d=activeDeck(),bad=Profile.deckIssues(d);
+    return `<section class="panel"><div class="phead"><h2>Mit welchem Deck?</h2><button class="linkb" data-tab="decks">Decks verwalten</button></div>
+        <div class="dscroll">${P.decks.map(x=>deckTile(x,false)).join("")}</div>${bad.length?`<p class="warn">${esc(bad[0])} <button class="linkb" data-tab="decks">Deck reparieren</button></p>`:""}</section>
+      <section class="modes">
+        <div class="panel mode"><span class="mico">${ico("bot")}</span><h2>Gegen den Computer</h2><p class="lead">Üben ohne Druck. Der Computer spielt einen zufälligen Zweig. Jeder Sieg bringt 1 Bonus-Pack.</p><button class="btn pri big wide" data-go="ai" ${bad.length?"disabled":""}>Partie starten</button></div>
+        <div class="panel mode" id="onlinepanel">${Online.panelHTML(bad.length>0)}</div>
       </section>`;
   }
 
   function vDecks(){
     const P=Profile.get();
     if(edit) return deckEditor();
-    return `<section class="panel"><div class="phead"><h2>Deine Decks</h2><button class="btn pri" data-go="newdeck" ${P.decks.length>=10?"disabled":""}>Neues Deck</button></div>
-      <p class="lead">Ein Deck hat 10 verschiedene Lehrkräfte (mindestens ${RULES.zweigMin} aus deinem Zweig, höchstens 1 Schulleitung) und 5 Unterstützungskarten (jede höchstens 2×). Du kannst nur Karten aus deiner Sammlung einbauen.</p>
-      <div class="decklist">${P.decks.map(d=>{const bad=Profile.deckIssues(d);return `<div class="drow" style="--c:var(${SUBJ[d.zweig].v})"><div><b>${esc(d.name)}</b><span>${esc(ZWEIGE[d.zweig].name)}${d.start?" · Vorlage":""}</span>${bad.length?`<span class="warn">${esc(bad[0])}</span>`:'<span class="ok">Spielbereit</span>'}</div>
-        <div class="row">${d.id===P.active?'<span class="pill">Aktiv</span>':`<button class="btn" data-activate="${esc(d.id)}">Aktiv setzen</button>`}<button class="btn" data-edit="${esc(d.id)}">${d.start?"Kopieren und bearbeiten":"Bearbeiten"}</button>${d.start?"":`<button class="btn" data-del="${esc(d.id)}">Löschen</button>`}</div></div>`;}).join("")}</div></section>`;
+    return `<section class="panel"><div class="phead"><div><h2>Deine Decks</h2><p class="mini">Tippe ein Deck an, um damit zu spielen.</p></div><button class="btn pri" data-go="newdeck" ${P.decks.length>=10?"disabled":""}>${ico("plus")} Neues Deck</button></div>
+      <div class="dgrid">${P.decks.map(d=>deckTile(d,true)).join("")}</div>
+      <details class="more"><summary>Wie baue ich ein Deck?</summary><p>Ein Deck hat <b>10 verschiedene Lehrkräfte</b> (mindestens ${RULES.zweigMin} aus deinem Zweig, höchstens 1 Schulleitung) und <b>5 Unterstützungskarten</b> (jede höchstens 2×). Du kannst nur Karten aus deiner Sammlung einbauen. Neue Karten bekommst du aus Packs.</p></details></section>`;
   }
   function deckEditor(){
     const d=edit,ts=d.ids.filter(id=>byId(id)),ss=d.ids.filter(id=>!byId(id)),bad=Profile.deckIssues(d);
-    const own=ts.filter(id=>byId(id).subj===d.zweig).length;
-    const list=CARDS.filter(c=>filt==="ALL"||c.subj===filt||(filt==="OWN"&&c.subj===d.zweig));
-    const chips=[["ALL","Alle"],["OWN","Mein Zweig"],...Object.entries(SUBJ).map(([k,s])=>[k,s.label])];
-    return `<section class="panel"><div class="phead"><h2>Deck bearbeiten</h2><div class="row"><button class="btn" data-go="cancelEdit">Abbrechen</button><button class="btn pri" data-go="saveDeck" ${bad.length?"disabled":""}>Speichern</button></div></div>
-      <div class="formrow"><label for="dname">Name</label><input id="dname" maxlength="28" value="${esc(d.name)}"></div>
-      <div class="zpick2">${ZWEIG_KEYS.map(z=>`<button class="zb2" data-dz="${z}" aria-pressed="${z===d.zweig}" style="--c:var(${SUBJ[z].v})"><b>${esc(ZWEIGE[z].name)}</b><span>${esc(ZWEIGE[z].perk.name)} · Joker ${esc(ZWEIGE[z].joker.name)}</span></button>`).join("")}</div>
-      <p class="status ${bad.length?"warn":"ok"}">${ts.length}/10 Lehrkräfte · ${own}/${RULES.zweigMin}+ aus ${esc(ZWEIGE[d.zweig].name.split(" ")[0])} · ${ss.length}/5 Unterstützer · ${bad.length?esc(bad[0]):"Deck ist spielbereit."}</p>
-      <h3>Unterstützungskarten</h3>
-      <div class="cg">${SUPPORTS.map(s=>{const n=ss.filter(x=>x===s.id).length,o=Profile.supOwned(s.id);return `<div class="pk ${n?"on":""}">${miniCard(s.id,0.62)}<div class="step"><button class="btn" data-sup="${s.id}" data-d="-1" ${n?"":"disabled"} aria-label="${esc(s.name)} weniger">−</button><b>${n}</b><button class="btn" data-sup="${s.id}" data-d="1" ${n>=Math.min(2,o)||ss.length>=5?"disabled":""} aria-label="${esc(s.name)} mehr">+</button></div><span class="have">${o}× in Sammlung</span></div>`;}).join("")}</div>
-      <h3>Lehrkräfte</h3>
-      <div class="chips">${chips.map(([k,l])=>`<button class="chipb" data-f="${k}" aria-pressed="${filt===k}">${esc(l)}</button>`).join("")}</div>
-      <div class="cg">${list.map(c=>{const on=ts.includes(c.id),ow=Profile.owns(c.id);return `<button class="pk ${on?"on":""} ${ow?"":"locked"}" data-pick="${c.id}" ${ow?"":"disabled"} aria-pressed="${on}" aria-label="${esc(c.name)}${ow?"":" (fehlt in deiner Sammlung)"}">${miniCard(c.id,0.62)}${on?'<span class="badge2">Im Deck</span>':""}${ow?"":'<span class="lockq">?</span>'}</button>`;}).join("")}</div></section>`;
+    const own=ts.filter(id=>byId(id).subj===d.zweig).length,sc=fitScale(112,140);
+    const list=CARDS.filter(c=>filt==="ALL"||c.subj===filt||(filt==="OWN"&&c.subj===d.zweig)).sort((a,b)=>(Profile.owns(b.id)?1:0)-(Profile.owns(a.id)?1:0));
+    const chips=[["ALL","Alle"],["OWN","Mein Zweig"],...Object.entries(SUBJ).filter(([k])=>CARDS.some(c=>c.subj===k)).map(([k,s])=>[k,s.label])];
+    const meter=(l,h,a,ok)=>`<span class="meter ${ok?"ok":""}"><b>${h}/${a}</b><span>${l}</span></span>`;
+    return `<section class="panel editor" style="--c:${zc(d.zweig)}">
+      <div class="edbar"><div class="edtop"><button class="btn sm ghost2" data-go="cancelEdit">Abbrechen</button><input id="dname" maxlength="28" value="${esc(d.name)}" aria-label="Name des Decks"><button class="btn pri sm" data-go="saveDeck" ${bad.length?"disabled":""}>Speichern</button></div>
+        <div class="meters">${meter("Lehrkräfte",ts.length,10,ts.length===10)}${meter("aus "+zn(d.zweig),own,RULES.zweigMin+"+",own>=RULES.zweigMin)}${meter("Unterstützer",ss.length,5,ss.length===5)}</div>
+        <p class="status ${bad.length?"warn":"ok"}">${bad.length?esc(bad[0]):"Deck ist spielbereit. Speichern nicht vergessen!"}</p></div>
+      <h3>Zweig</h3>
+      <div class="zpick3 small">${ZWEIG_KEYS.map(z=>`<button type="button" class="zb3" data-dz="${z}" aria-pressed="${z===d.zweig}" style="--c:${zc(z)}"><b>${esc(ZWEIGE[z].name)}</b><span><i>${esc(ZWEIGE[z].perk.name)}</i> · Joker ${esc(ZWEIGE[z].joker.name)}</span></button>`).join("")}</div>
+      <h3>Lehrkräfte <span class="mini">Tippen zum Hinzufügen oder Entfernen</span></h3>
+      <div class="chips hs">${chips.map(([k,l])=>`<button class="chipb" data-f="${k}" aria-pressed="${filt===k}">${esc(l)}</button>`).join("")}</div>
+      <div class="cg fit">${list.map(c=>{const on=ts.includes(c.id),ow=Profile.owns(c.id);return `<button class="pk ${on?"on":""} ${ow?"":"locked"}" data-pick="${c.id}" ${ow?"":"disabled"} aria-pressed="${on}" aria-label="${esc(c.name)}${ow?"":" (fehlt in deiner Sammlung)"}">${miniCard(c.id,sc)}${on?'<span class="badge2">✓ Im Deck</span>':""}${ow?"":'<span class="lockq">?</span>'}</button>`;}).join("")}</div>
+      <h3>Unterstützungskarten <span class="mini">bis zu 2× dieselbe</span></h3>
+      <div class="cg fit">${SUPPORTS.map(s=>{const n=ss.filter(x=>x===s.id).length,o=Profile.supOwned(s.id);return `<div class="pk ${n?"on":""} ${o?"":"locked"}">${miniCard(s.id,sc)}<div class="step"><button class="btn sm" data-sup="${s.id}" data-d="-1" ${n?"":"disabled"} aria-label="${esc(s.name)} weniger">−</button><b>${n}</b><button class="btn sm" data-sup="${s.id}" data-d="1" ${n>=Math.min(2,o)||ss.length>=5?"disabled":""} aria-label="${esc(s.name)} mehr">+</button></div><span class="have">${o}× in Sammlung</span></div>`;}).join("")}</div></section>`;
   }
 
   function vPacks(){
     const P=Profile.get(),left=packsLeft();
-    const tagOf=x=>x.tag?`<span class="tag">${esc(x.tag)}</span>`:x.isNew?'<span class="tag new">Neu</span>':"";
-    const face=x=>x.k==="e"?energyCard(ENERGIES.find(e=>e.id===x.id),0.8):miniCard(x.id,0.8,{shiny:x.k==="s"});
-    const stage=lastPack?`<div class="stage5">${lastPack.map((x,i)=>x.open?`<div class="flip revealed ${x.tag&&x.tag!=="Selten"?"glow":""}">${tagOf(x)}${face(x)}</div>`:`<button class="flip" data-flip="${i}" aria-label="Karte ${i+1} aufdecken"><div class="backside"><div>Lehrer<em>zimmer</em></div></div></button>`).join("")}</div>${lastPack.some(x=>!x.open)?'<div class="row" style="justify-content:center"><button class="btn" data-go="allopen">Alle aufdecken</button></div>':""}`:"";
-    return `<section class="panel"><div class="packbar"><button class="pack-env" data-go="pack" ${left?"":"disabled"}>Pack öffnen<small>${left} verfügbar</small></button>
-      <div class="pinfo"><h2>Packs</h2><p class="lead">Jeden Tag gibt es 2 Gratis-Packs, dazu 1 Bonus-Pack für jeden Sieg. Jedes Pack hat 5 Karten: 3 Lehrkräfte, 1 Unterstützungskarte und 1 Glückskarte (Schulleitung 4 %, Shiny 7 %, Shiny-Schulleitung 1 %). Neue Lehrkräfte kannst du sofort in Decks einbauen.</p>
-      ${P.best.length?`<b>Deine besten Funde</b><ul>${P.best.map(b=>`<li>${esc(b.tag)} ${esc(b.k==="e"?ENERGIES.find(e=>e.id===b.id).name:b.k==="sup"?supById(b.id).name:byId(b.id).name+(b.k==="s"?" (Shiny)":""))} <span class="mini">(Pack ${b.pack})</span></li>`).join("")}</ul>`:""}</div></div>${stage}</section>`;
+    const nm=b=>b.k==="e"?ENERGIES.find(e=>e.id===b.id).name:b.k==="sup"?supById(b.id).name:byId(b.id).name+(b.k==="s"?" (Shiny)":"");
+    const best=P.best.length?`<div class="best"><span class="eyebrow">Deine besten Funde</span><div class="chips">${P.best.map(b=>`<span class="chip"><b>${esc(b.tag)}</b> ${esc(nm(b))}</span>`).join("")}</div></div>`:"";
+    if(lastPack){
+      const sc=Math.min(0.8,fitScale(96,160,10));
+      const tagOf=x=>x.tag?`<span class="tag">${esc(x.tag)}</span>`:x.isNew?'<span class="tag new">Neu</span>':"";
+      const face=x=>x.k==="e"?energyCard(ENERGIES.find(e=>e.id===x.id),sc):miniCard(x.id,sc,{shiny:x.k==="s"});
+      const closed=lastPack.filter(x=>!x.open).length;
+      return `<section class="panel reveal"><div class="phead"><h2>${closed?"Tippe die Karten an":"Dein Pack"}</h2>${closed?`<button class="btn" data-go="allopen">Alle aufdecken</button>`:""}</div>
+        <div class="stage5" style="--w:${Math.round(200*sc)}px;--h:${Math.round(280*sc)}px">${lastPack.map((x,i)=>x.open?`<div class="flip revealed ${x.tag&&x.tag!=="Selten"?"glow":""}">${tagOf(x)}${face(x)}</div>`:`<button class="flip" data-flip="${i}" aria-label="Karte ${i+1} aufdecken"><span class="backside"><span>Lehrer<em>zimmer</em></span></span></button>`).join("")}</div>
+        ${closed?"":`<div class="row center">${left?`<button class="btn pri big" data-go="pack">Nächstes Pack öffnen (${left})</button>`:""}<button class="btn big ${left?"":"pri"}" data-go="packdone">${left?"Fertig":"Zurück"}</button><button class="btn big light" data-tab="album">Ins Album</button></div>`}</section>`;
+    }
+    return `<section class="panel packs3"><div class="packhero">
+        <button class="packbtn" data-go="pack" ${left?"":"disabled"} aria-label="${left?"Pack öffnen":"Keine Packs übrig"}">${packArt(left?"lg":"lg empty")}${left?`<span class="pcount">${left}</span>`:""}</button>
+        <div class="pinfo"><h2>${left?`${left} ${left===1?"Pack":"Packs"} bereit`:"Alle Packs geöffnet"}</h2>
+          <p class="lead">${left?"Tippe auf das Pack, um es zu öffnen.":"Morgen gibt es 2 neue Gratis-Packs. Jeder Sieg bringt sofort 1 Bonus-Pack."}</p>
+          <div class="chips"><span class="chip">${P.packs.free} gratis heute</span><span class="chip">${P.packs.bonus} Bonus</span><span class="chip">${P.packs.opened} geöffnet</span></div>
+          ${left?`<button class="btn pri big" data-go="pack">Pack öffnen</button>`:`<button class="btn pri big" data-go="ai">Partie spielen</button>`}
+          <details class="more"><summary>Was ist in einem Pack?</summary><p>5 Karten: 3 Lehrkräfte, 1 Unterstützungskarte und 1 Glückskarte. Die Glückskarte kann eine Schulleitung (4 %), eine Shiny-Karte (7 %) oder eine Shiny-Schulleitung (1 %) sein, sonst eine Lehrkraft oder ein Energie-Motiv. Neue Lehrkräfte kannst du sofort in Decks einbauen.</p></details></div></div>${best}</section>`;
   }
   function vAlbum(){
     const P=Profile.get(),c=P.coll,cnt=o=>Object.keys(o).filter(k=>o[k]>0).length;
-    const prog=(l,h,a)=>`<div><span class="mini">${l}</span><b>${h}/${a}</b><div class="bar2"><i style="width:${Math.round(100*h/a)}%"></i></div></div>`;
     const total=CARDS.length*2+SUPPORTS.length+ENERGIES.length,have=cnt(c.t)+cnt(c.s)+cnt(c.sup)+cnt(c.e);
-    const sec=[["t","Lehrkräfte"],["s","Shiny"],["sup","Unterstützer"],["e","Energie"]];
-    const cell=(html,n)=>`<div class="ac ${n?"":"locked"}">${html}${n?`<span class="cnt">×${n}</span>`:'<span class="lockq">?</span>'}</div>`;
+    const sec=[["t","Lehrkräfte",cnt(c.t),CARDS.length],["s","Shiny",cnt(c.s),CARDS.length],["sup","Unterstützer",cnt(c.sup),SUPPORTS.length],["e","Energie",cnt(c.e),ENERGIES.length]];
+    const sc=fitScale(104,150);
+    const cell=(html,n,z)=>n?`<button class="ac" data-zoom="${z}" aria-label="Karte groß ansehen">${html}${n>1?`<span class="cnt">×${n}</span>`:""}</button>`:`<div class="ac locked">${html}<span class="lockq">?</span></div>`;
     let grid="";
-    if(albumF==="t") grid=CARDS.map(x=>cell(miniCard(x.id,0.6),c.t[x.id])).join("");
-    if(albumF==="s") grid=CARDS.map(x=>cell(miniCard(x.id,0.6,{shiny:true}),c.s[x.id])).join("");
-    if(albumF==="sup") grid=SUPPORTS.map(x=>cell(miniCard(x.id,0.6),c.sup[x.id])).join("");
-    if(albumF==="e") grid=ENERGIES.map(x=>cell(energyCard(x,0.6),c.e[x.id])).join("");
-    return `<section class="panel"><h2>Sammelalbum</h2><div class="prog">${prog("Gesamt",have,total)}${prog("Lehrkräfte",cnt(c.t),CARDS.length)}${prog("Shiny",cnt(c.s),CARDS.length)}${prog("Unterstützer",cnt(c.sup),SUPPORTS.length)}${prog("Energie-Motive",cnt(c.e),ENERGIES.length)}<div><span class="mini">Packs geöffnet</span><b>${P.packs.opened}</b></div></div>
-      <div class="chips">${sec.map(([k,l])=>`<button class="chipb" data-af="${k}" aria-pressed="${albumF===k}">${l}</button>`).join("")}</div><div class="cg album">${grid}</div></section>`;
+    if(albumF==="t") grid=CARDS.map(x=>cell(miniCard(x.id,sc),c.t[x.id],"t:"+x.id)).join("");
+    if(albumF==="s") grid=CARDS.map(x=>cell(miniCard(x.id,sc,{shiny:true}),c.s[x.id],"s:"+x.id)).join("");
+    if(albumF==="sup") grid=SUPPORTS.map(x=>cell(miniCard(x.id,sc),c.sup[x.id],"sup:"+x.id)).join("");
+    if(albumF==="e") grid=ENERGIES.map(x=>cell(energyCard(x,sc),c.e[x.id],"e:"+x.id)).join("");
+    return `<section class="panel"><div class="ahead">${ring(have/total)}<div><h2>Sammelalbum</h2><p class="mini">${have} von ${total} Karten gesammelt · ${P.packs.opened} Packs geöffnet</p><div class="bar2"><i style="width:${(100*have/total).toFixed(1)}%"></i></div></div></div>
+      <div class="chips hs seg2">${sec.map(([k,l,h,a])=>`<button class="chipb" data-af="${k}" aria-pressed="${albumF===k}">${l} <span class="n">${h}/${a}</span></button>`).join("")}</div>
+      <p class="mini">Tippe eine Karte an, um sie groß zu sehen.</p>
+      <div class="cg fit album">${grid}</div></section>`;
   }
   function vRules(){
-    const zt=ZWEIG_KEYS.map(z=>{const Z=ZWEIGE[z];return `<tr><th><span class="zdot" style="--c:var(${SUBJ[z].v})"></span>${esc(Z.name)}</th><td><b>${esc(Z.perk.name)}:</b> ${esc(Z.perk.text)}</td><td><b>${esc(Z.joker.name)}:</b> ${esc(Z.joker.text)}</td></tr>`;}).join("");
-    const cyc=["MINT","GES","WIR","FS","DEU","MINT"].map(k=>`<span class="s" style="--c:var(${SUBJ[k].v})">${SUBJ[k].label}</span>`).join(' → ');
-    return `<section class="panel rules2"><h2>So geht's</h2>
-      <div class="grid2"><div><h3>Ziel</h3><p>Schicke 3 gegnerische Lehrkräfte in den Feierabend. Jeder Feierabend bringt 5 Punkte, wer zuerst 15 hat, gewinnt.</p>
-      <h3>Dein Zug</h3><ol><li>1 Karte ziehen.</li><li>Beliebig: 1 Lehrkraft auf die Bank, 1 Unterstützungskarte (Wirtschaft: 2), 1 Energie anlegen, 1× Rückzug, Joker (1× pro Spiel).</li><li>Angreifen: Die aktive Lehrkraft zahlt die Energie der Attacke. Damit endet der Zug.</li></ol>
-      <p class="mini">Der Startspieler darf im ersten Zug weder angreifen noch Unterstützer oder Joker spielen.</p></div>
-      <div><h3>Schwächen</h3><p class="cyc">${cyc}</p><p>Gegen die Gruppe rechts daneben macht eine Lehrkraft +${RULES.weakBonus} Schaden.</p>
-      <h3>Gwent-Ideen</h3><ul><li><b>Neu ziehen:</b> Bis zu 2 Startkarten tauschen.</li><li><b>Heldenkarte:</b> Gegnerische Unterstützer und Joker wirken nicht auf die Schulleitung.</li><li><b>Sonderkarten:</b> ${SUPPORTS.filter(s=>s.gwent).map(s=>esc(s.name)).join(", ")}.</li></ul></div></div>
-      <h3>Die 4 Zweige</h3><div class="tscroll"><table class="ztbl"><tbody>${zt}</tbody></table></div>
-      <h3>Online spielen</h3>${window.LZ_SITE?`<p>Schick den Link dieser Seite an deine Mitspielerinnen und Mitspieler. Wer eine Herausforderung erstellt, wartet unter „Spielen“; die anderen sehen sie dort und treten bei. Dein Spielername steht auf der Startseite.</p>`:`<p>Mitspielerinnen und Mitspieler brauchen einen claude.ai-Zugang zu dieser Seite. Lade sie über „Teilen“ per E-Mail mit dem Recht <b>Bearbeiten</b> ein (ohne öffentlichen Link). Dann sehen sie deine Herausforderung unter „Spielen“. Bitte die Echtnamen nur mit Einverständnis der Lehrkräfte teilen.</p>`}
+    const zt=ZWEIG_KEYS.map(z=>{const Z=ZWEIGE[z];return `<div class="zr" style="--c:${zc(z)}"><b>${esc(Z.name)}</b><p><i>${esc(Z.perk.name)}</i> ${esc(Z.perk.text)}</p><p><i>Joker ${esc(Z.joker.name)}</i> ${esc(Z.joker.text)}</p></div>`;}).join("");
+    const cyc=["MINT","GES","WIR","FS","DEU","MINT"].map(k=>`<span class="s" style="--c:var(${SUBJ[k].v})">${SUBJ[k].label}</span>`).join('<span class="ar">→</span>');
+    return `<section class="panel rules3"><h2>So geht's</h2>
+      <ol class="steps big"><li><i>1</i><b>Ziel</b><span>Schicke 3 gegnerische Lehrkräfte in den Feierabend. Jeder Feierabend bringt 5 Punkte, wer zuerst 15 hat, gewinnt.</span></li>
+        <li><i>2</i><b>Vorbereiten</b><span>Ziehe 1 Karte. Dann beliebig: 1 Lehrkraft auf die Bank, 1 Unterstützungskarte (Wirtschaft: 2), 1 Energie anlegen, 1× Rückzug, Joker (1× pro Spiel).</span></li>
+        <li><i>3</i><b>Angreifen</b><span>Die aktive Lehrkraft zahlt die Energie der Attacke. Damit endet dein Zug.</span></li></ol>
+      <p class="mini">Der Startspieler darf im ersten Zug weder angreifen noch Unterstützer oder Joker spielen.</p>
+      <h3>Schwächen</h3><p class="cyc">${cyc}</p><p>Gegen die Gruppe rechts daneben macht eine Lehrkraft +${RULES.weakBonus} Schaden.</p>
+      <h3>Die 4 Zweige</h3><div class="zrules">${zt}</div>
+      <details class="more"><summary>Besondere Regeln</summary><ul><li><b>Neu ziehen:</b> Bis zu 2 Startkarten tauschen.</li><li><b>Heldenkarte:</b> Gegnerische Unterstützer und Joker wirken nicht auf die Schulleitung.</li><li><b>Sonderkarten:</b> ${SUPPORTS.filter(s=>s.gwent).map(s=>esc(s.name)).join(", ")}.</li></ul></details>
+      <details class="more"><summary>Online spielen</summary>${window.LZ_SITE?`<p>Schick den Link dieser Seite an deine Mitspielerinnen und Mitspieler. Wer eine Herausforderung erstellt, wartet unter „Spielen“. Die anderen sehen sie dort und treten bei.</p>`:`<p>Mitspielerinnen und Mitspieler brauchen einen claude.ai-Zugang zu dieser Seite. Lade sie über „Teilen“ per E-Mail mit dem Recht <b>Bearbeiten</b> ein (ohne öffentlichen Link). Dann sehen sie deine Herausforderung unter „Spielen“. Bitte die Echtnamen nur mit Einverständnis der Lehrkräfte teilen.</p>`}</details>
       <p><a href="https://claude.ai/artifact/JnYEqSzdzPNuHWdzYJpfen#regeln" target="_blank" rel="noopener">Ausführliche Regeln und Spieltest-Zahlen</a></p></section>`;
   }
+  // Karte groß ansehen (Album)
+  function zoom(key){const [k,id]=key.split(":"),sc=Math.min(1.7,(innerWidth-48)/200,(innerHeight-120)/280);
+    const html=k==="e"?energyCard(ENERGIES.find(e=>e.id===id),sc):miniCard(id,sc,{shiny:k==="s"});
+    const z=document.createElement("div");z.className="mzoom";z.setAttribute("role","dialog");z.setAttribute("aria-label","Karte");z.innerHTML=`${html}<button class="btn" data-go="zoomclose">Schließen</button>`;
+    z.addEventListener("click",()=>z.remove());el().appendChild(z);}
+  addEventListener("resize",()=>{clearTimeout(lastW._t);const t=setTimeout(()=>{if(Math.abs(innerWidth-lastW)>40&&!document.body.classList.contains("ingame")&&Profile.get()&&["album","packs","decks"].includes(tab)){const y=el().querySelector(".view").scrollTop;if(edit&&$("dname"))edit.name=$("dname").value;render();el().querySelector(".view").scrollTop=y;}},180);lastW._t=t;});
 
   /* Eingaben im Menü */
   function onClick(e){
     const P=Profile.get(),t=e.target;
+    el().querySelectorAll("details.me[open]").forEach(d=>{if(!d.contains(t))d.open=false;});
     const wm=t.closest("[data-wm]");if(wm){wmode=wm.dataset.wm;wmsg="";render();return;}
     const wzb=t.closest("[data-wz]");if(wzb){wz=wzb.dataset.wz;const keep=[...el().querySelectorAll("input")].map(i=>[i.id,i.value]);render();keep.forEach(([id,v])=>{if($(id))$(id).value=v;});return;}
-    const tb=t.closest("[data-tab]");if(tb){tab=tb.dataset.tab;edit=null;render();el().querySelector(".view").scrollTop=0;return;}
+    const tb=t.closest("[data-tab]");if(tb){tab=tb.dataset.tab;edit=null;if(tab!=="packs")lastPack=null;render();el().querySelector(".view").scrollTop=0;return;}
     const pd=t.closest("[data-pickdeck]");if(pd){P.active=pd.dataset.pickdeck;Profile.save();render();return;}
+    const zm=t.closest("[data-zoom]");if(zm){zoom(zm.dataset.zoom);return;}
     const go=t.closest("[data-go]")?.dataset.go;
     if(go==="ai"){const d=activeDeck();if(Profile.deckIssues(d).length){tab="decks";render();return;}Game.startAI(d.ids.slice(),d.zweig);return;}
     if(go==="resume"){Online.resume();return;}
     if(go==="wstart"){Profile.create(wz);Profile.flush();tab="start";render();return;}
     if(go==="logout"){AUTH().logout().then(()=>location.reload());return;}
-    if(go==="toaccount"){tab="start";render();$("kname")?.focus();return;}
-    if(go==="pack"){if(!packsLeft())return;if(P.packs.free>0)P.packs.free--;else P.packs.bonus--;lastPack=openPack();Profile.save();render();return;}
+    if(go==="toaccount"||go==="showlink"){tab="start";showLink=true;render();$("kname")?.focus();return;}
+    if(go==="hidelink"){showLink=false;wmsg="";render();return;}
+    if(go==="pack"){if(!packsLeft())return;if(P.packs.free>0)P.packs.free--;else P.packs.bonus--;lastPack=openPack();Profile.save();tab="packs";render();el().querySelector(".view").scrollTop=0;return;}
+    if(go==="packdone"){lastPack=null;render();return;}
     if(go==="allopen"){lastPack.forEach(x=>x.open=true);render();return;}
-    if(go==="newdeck"){edit={id:"d"+Date.now(),name:"Neues Deck",zweig:activeDeck().zweig,ids:[]};render();return;}
+    if(go==="newdeck"){edit={id:"d"+Date.now(),name:"Neues Deck",zweig:activeDeck().zweig,ids:[]};render();el().querySelector(".view").scrollTop=0;return;}
     if(go==="cancelEdit"){edit=null;render();return;}
     if(go==="saveDeck"){edit.name=($("dname").value||"Mein Deck").slice(0,28);const k=P.decks.findIndex(d=>d.id===edit.id);if(k>=0)P.decks[k]=edit;else P.decks.push(edit);P.active=edit.id;edit=null;Profile.save();render();return;}
     if(go&&Online.handle(go,activeDeck())) return;
     const fl=t.closest("[data-flip]");if(fl){lastPack[+fl.dataset.flip].open=true;render();return;}
     const af=t.closest("[data-af]");if(af){albumF=af.dataset.af;render();return;}
     const ac=t.closest("[data-activate]");if(ac){P.active=ac.dataset.activate;Profile.save();render();return;}
-    const ed=t.closest("[data-edit]");if(ed){const d=P.decks.find(x=>x.id===ed.dataset.edit);edit=JSON.parse(JSON.stringify(d));if(d.start){edit.id="d"+Date.now();edit.name=d.name.replace("Startdeck","Mein");delete edit.start;}render();return;}
+    const ed=t.closest("[data-edit]");if(ed){const d=P.decks.find(x=>x.id===ed.dataset.edit);edit=JSON.parse(JSON.stringify(d));if(d.start){edit.id="d"+Date.now();edit.name=d.name.replace("Startdeck","Mein");delete edit.start;}render();el().querySelector(".view").scrollTop=0;return;}
     const dl=t.closest("[data-del]");if(dl){if(dl.dataset.confirm){P.decks=P.decks.filter(d=>d.id!==dl.dataset.del);if(P.active===dl.dataset.del)P.active=P.decks[0].id;Profile.save();render();}else{dl.dataset.confirm="1";dl.textContent="Wirklich löschen?";}return;}
     if(edit){
-      const dz=t.closest("[data-dz]");if(dz){edit.zweig=dz.dataset.dz;edit.name=$("dname").value;render();return;}
-      const f=t.closest("[data-f]");if(f){filt=f.dataset.f;edit.name=$("dname").value;render();return;}
+      const dz=t.closest("[data-dz]");if(dz){edit.zweig=dz.dataset.dz;edit.name=$("dname").value;const y=el().querySelector(".view").scrollTop;render();el().querySelector(".view").scrollTop=y;return;}
+      const f=t.closest("[data-f]");if(f){filt=f.dataset.f;edit.name=$("dname").value;const y=el().querySelector(".view").scrollTop;render();el().querySelector(".view").scrollTop=y;return;}
       const pk=t.closest("[data-pick]");if(pk){const id=pk.dataset.pick,ts=edit.ids.filter(x=>byId(x));edit.name=$("dname").value;
         if(edit.ids.includes(id)) edit.ids=edit.ids.filter(x=>x!==id); else if(ts.length<10) edit.ids.push(id);
         const y=el().querySelector(".view").scrollTop;render();el().querySelector(".view").scrollTop=y;return;}
@@ -1870,9 +2170,10 @@ const Menu=(()=>{
       r=await A.register($("rname").value,$("rpass").value);if(r.ok){Profile.create(wz);await Profile.flush();location.reload();return;}}
     if(f==="loginform"){r=await A.login($("lname").value,$("lpass").value);if(r.ok){location.reload();return;}}
     if(f==="linkform"){r=await A.register($("kname").value,$("kpass").value);if(r.ok){await Profile.flush();location.reload();return;}}
-    wbusy=false;wmsg=r&&r.error||"";render();
+    const keep=[...el().querySelectorAll("input")].map(i=>[i.id,i.value]);
+    wbusy=false;wmsg=r&&r.error||"";render();keep.forEach(([id,v])=>{if($(id)&&!/pass/.test(id))$(id).value=v;});
   }
-  return {open,render,onClick,onSubmit,activeDeck,refreshOnline:()=>{if(tab==="spielen"&&$("onlinepanel"))$("onlinepanel").innerHTML=Online.panelHTML(Profile.deckIssues(activeDeck()).length>0);if(tab==="start")render();else el().querySelector(".who").innerHTML=whoHTML();}};
+  return {open,render,onClick,onSubmit,activeDeck,refreshOnline:()=>{if(!Profile.get())return;if(tab==="spielen"&&$("onlinepanel"))$("onlinepanel").innerHTML=Online.panelHTML(Profile.deckIssues(activeDeck()).length>0);if(tab==="start"&&!showLink)render();else el().querySelector(".who").innerHTML=whoHTML();}};
 })();
 
 /* ---------- Online: Lobby (db), Live-Kanal (room), Züge im Gleichschritt ---------- */
@@ -1903,12 +2204,13 @@ const Online=(()=>{
   const open=()=>lobby.filter(l=>l.st==="open"&&Date.now()-(l.t||0)<T_OPEN&&(!here||l.host===myId||here.has(l.host)));
   function status(){return !ready?"nicht verfügbar":`${peers||1} online · ${open().filter(l=>l.host!==myId).length} offene Herausforderungen`;}
   function panelHTML(deckBad){
-    if(!ready&&window.LZ_SITE) return `<h2>Online</h2><p class="lead">${window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey?"Keine Verbindung zum Spielserver. Prüfe dein Internet und lade die Seite neu.":"Der Online-Modus wird gerade eingerichtet. Gegen den Computer kannst du schon spielen."}</p>`;
-    if(!ready) return `<h2>Online</h2><p class="lead">Online-Partien brauchen einen angemeldeten claude.ai-Zugang mit Bearbeitungsrecht für diese Seite. Wer das hat, sieht hier offene Herausforderungen.</p><p class="mini">Einladen: „Teilen“ oben rechts, Person per E-Mail mit „Bearbeiten“ hinzufügen.</p>`;
+    const head=`<span class="mico">${ico("online")}</span><h2>Online${ready?` <span class="pill live">${peers||1} online</span>`:""}</h2>`;
+    if(!ready&&window.LZ_SITE) return `${head}<p class="lead">${window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey?"Keine Verbindung zum Spielserver. Prüfe dein Internet und lade die Seite neu.":"Der Online-Modus wird gerade eingerichtet. Gegen den Computer kannst du schon spielen."}</p>`;
+    if(!ready) return `${head}<p class="lead">Online-Partien brauchen einen angemeldeten claude.ai-Zugang mit Bearbeitungsrecht für diese Seite. Wer das hat, sieht hier offene Herausforderungen.</p><p class="mini">Einladen: „Teilen“ oben rechts, Person per E-Mail mit „Bearbeiten“ hinzufügen.</p>`;
     const mine=open().find(l=>l.host===myId),others=open().filter(l=>l.host!==myId);
-    return `<h2>Online <span class="pill">${peers||1} online</span></h2>
-      ${mine?`<p class="lead">Deine Herausforderung ist offen (${esc(ZWEIGE[mine.hz].name)}). Warte, bis jemand beitritt.</p><button class="btn" data-go="cancelChallenge">Zurückziehen</button>`
-        :`<p class="lead">Fordere jemanden heraus oder tritt einer offenen Partie bei. Dein aktives Deck wird benutzt.</p><div class="row"><button class="btn pri" data-go="challenge" ${deckBad||busy?"disabled":""}>Herausforderung erstellen</button><button class="btn" data-go="quick" ${deckBad||busy||!others.length?"disabled":""}>Schnell beitreten</button></div>`}
+    return `${head}
+      ${mine?`<p class="lead wait"><span class="spin" aria-hidden="true"></span> Warte auf einen Gegner … Deine Herausforderung (${esc(ZWEIGE[mine.hz].name)}) sehen alle, die gerade online sind.</p><button class="btn big wide" data-go="cancelChallenge">Zurückziehen</button>`
+        :`<p class="lead">Spiel live gegen deine Klasse. Dein aktives Deck wird benutzt.</p><div class="row"><button class="btn pri big" data-go="challenge" ${deckBad||busy?"disabled":""}>Herausforderung erstellen</button><button class="btn big" data-go="quick" ${deckBad||busy||!others.length?"disabled":""}>Schnell beitreten</button></div>`}
       <h3>Offene Herausforderungen</h3>${others.length?`<ul class="lob">${others.map(l=>`<li><span class="dot" style="--c:var(${SUBJ[l.hz].v})"></span><b>${esc(nameOf(l.host))}</b><span class="mini">${esc(ZWEIGE[l.hz].name)} · vor ${Math.max(1,Math.round((Date.now()-l.t)/60000))} Min.</span><button class="btn" data-go="join:${esc(l.id)}" ${deckBad||busy?"disabled":""}>Beitreten</button></li>`).join("")}</ul>`:'<p class="mini">Gerade keine. Erstelle selbst eine.</p>'}
       ${msg?`<p class="warn">${esc(msg)}</p>`:""}`;
   }
@@ -1972,7 +2274,7 @@ const Online=(()=>{
     if(!s||!s.exists||s.data().st==="done"){P.cur=null;Profile.save();Menu.render();return;}
     start(Object.assign({id:s.id},s.data()),P.cur.me,true);
   }
-  return {init,panelHTML,handle,status,resume,myName:()=>myNameStr,setMyName:n=>{myNameStr=n||myNameStr;},ready:()=>ready};
+  return {init,panelHTML,handle,status,resume,peers:()=>peers||1,myName:()=>myNameStr,setMyName:n=>{myNameStr=n||myNameStr;},ready:()=>ready};
 })();
 
 /* ---------- Start ---------- */
