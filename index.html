@@ -2020,6 +2020,8 @@ return {startAI,startOnline,layout,fullHTML,active:()=>!!G,setOppAway:v=>{if(C){
 /* ---------- Profil: privat pro Person in db, sonst im Browser ---------- */
 // Kartenversion: steigt, wenn sich Kartenwerte so ändern, dass alte Profile und Online-Partien nicht mehr passen
 const CARD_VER=3;
+// Neustart: steigt diese Zahl, beginnen alle Spieler von vorn (der alte Stand wird als Sicherung "profil_vorher" abgelegt)
+const SEASON=1;
 const Profile=(()=>{
   let LS="lza-profil-v1";
   let data=null,doc=null,writing=false,again=false;
@@ -2028,11 +2030,11 @@ const Profile=(()=>{
   function base(zweig="MINT"){
     const t={};RECOMMENDED_Z[zweig].forEach(id=>t[id]=1);
     const sup={};RECOMMENDED_Z_SUPPORTS.forEach(id=>sup[id]=(sup[id]||0)+1);
-    return {v:2,kv:CARD_VER,zweig,coll:{t,s:{},sup,e:{kaffee:1}},
+    return {v:2,kv:CARD_VER,season:SEASON,zweig,coll:{t,s:{},sup,e:{kaffee:1}},
       decks:[{id:"start-"+zweig,name:"Startdeck "+ZWEIGE[zweig].name.split(" ")[0],zweig,ids:RECOMMENDED_Z[zweig].concat(RECOMMENDED_Z_SUPPORTS),start:true}],
       active:"start-"+zweig,packs:{day:"",free:0,bonus:1,opened:0},stats:{w:0,l:0,ow:0,ol:0},best:[],cur:null};
   }
-  function fix(d){const old=d&&d.kv!==CARD_VER&&d.coll;const b=base(d&&d.zweig||"MINT");d=Object.assign(b,d||{});d.coll=Object.assign(b.coll,d.coll||{});["t","s","sup","e"].forEach(k=>d.coll[k]=d.coll[k]||{});d.packs=Object.assign(base().packs,d.packs||{});d.stats=Object.assign(base().stats,d.stats||{});if(!Array.isArray(d.decks)||!d.decks.length)d.decks=b.decks;if(old)migrate(d);return d;}
+  function fix(d){const old=d&&d.kv!==CARD_VER&&d.coll,sea=d&&d.season||0;const b=base(d&&d.zweig||"MINT");d=Object.assign(b,d||{});d.season=sea;d.coll=Object.assign(b.coll,d.coll||{});["t","s","sup","e"].forEach(k=>d.coll[k]=d.coll[k]||{});d.packs=Object.assign(base().packs,d.packs||{});d.stats=Object.assign(base().stats,d.stats||{});if(!Array.isArray(d.decks)||!d.decks.length)d.decks=b.decks;if(old)migrate(d);return d;}
   // Umstellung auf die neuen Karten (Kartenversion 3): Startdecks erneuern und ihre Karten schenken, eigene Decks auf den passenden Zweig setzen
   function migrate(d){
     const give=z=>RECOMMENDED_Z[z].forEach(id=>{if(!d.coll.t[id])d.coll.t[id]=1;});
@@ -2044,7 +2046,7 @@ const Profile=(()=>{
     });
     d.cur=null;d.kv=CARD_VER;migrated=true;
   }
-  let migrated=false;
+  let migrated=false,wasReset=false;
   // liefert null, wenn es für diese Person noch kein Profil gibt (dann Zweig wählen)
   async function init(db,uid){
     LS="lza-profil-v2-"+(uid||"lokal");doc=null;
@@ -2053,6 +2055,10 @@ const Profile=(()=>{
       try{doc=db.collection("data/users/"+uid).doc("profil");const s=await doc.get();
         if(s.exists) data=fix(JSON.parse(JSON.stringify(s.data()))); else if(data) await doc.set(data);}catch(e){doc=null;}
     }
+    // Neustart: alten Stand sichern, dann wie ein neuer Spieler den Zweig wählen
+    if(data&&(data.season||0)<SEASON){const old=JSON.parse(JSON.stringify(data));store.set(LS+"-vorher",old);
+      if(doc){try{await db.collection("data/users/"+uid).doc("profil_vorher").set(old);}catch(e){}}
+      data=null;wasReset=true;return null;}
     if(data){daily();if(migrated){migrated=false;save();}} return data;
   }
   function create(zweig){data=base(zweig);daily();save();return data;}
@@ -2070,7 +2076,7 @@ const Profile=(()=>{
     return p;
   }
   async function flush(){clearTimeout(t);store.set(LS,data);if(doc){try{await doc.set(JSON.parse(JSON.stringify(data)));}catch(e){}}}
-  return {init,create,save,flush,daily,get:()=>data,owns,supOwned,deckIssues,synced:()=>!!doc};
+  return {init,create,save,flush,daily,wasReset:()=>wasReset,get:()=>data,owns,supOwned,deckIssues,synced:()=>!!doc};
 })();
 
 /* ---------- Packs ---------- */
@@ -2138,7 +2144,9 @@ const Menu=(()=>{
   const zc=z=>`var(${SUBJ[z].v})`,zn=z=>ZWEIGE[z].name.split(" ")[0];
   function zweigPick(){return `<div class="zpick3">${ZWEIG_KEYS.map(z=>`<button type="button" class="zb3" data-wz="${z}" aria-pressed="${z===wz}" style="--c:${zc(z)}"><b>${esc(ZWEIGE[z].name)}</b><span><i>${esc(ZWEIGE[z].perk.name)}</i> ${esc(ZWEIGE[z].perk.text)}</span><span><i>Joker ${esc(ZWEIGE[z].joker.name)}</i> ${esc(ZWEIGE[z].joker.text)}</span></button>`).join("")}</div>`;}
   function vWelcome(){
-    const A=AUTH();
+    const A=AUTH(),acct=A&&A.info.account,reset=Profile.wasReset();
+    const note=reset?`<p class="banner slim" style="color:var(--ink)"><span><b>Neustart mit den neuen Karten!</b> Alle beginnen von vorn: Wähle deinen Zweig und hol dir dein Startdeck.</span></p>`:"";
+    if(acct) return `<section class="welcome3"><div class="wcopy"><h1 class="wt">Lehrer<em>zimmer</em> Arena</h1><p class="tag">Hallo ${esc(A.info.name||Online.myName()||"")}!</p></div><div class="panel wform">${note}<h2>Wähle deinen Zweig</h2><p class="lead">Du bekommst sein Startdeck geschenkt. Alle anderen Lehrkräfte sammelst du über Packs.</p>${zweigPick()}<button class="btn pri big wide" data-go="wstart">Mit ${esc(zn(wz))} loslegen</button></div></section>`;
     const seg=A?`<div class="seg" role="tablist">${[["new","Konto erstellen"],["login","Anmelden"],["guest","Ohne Konto"]].map(([k,l])=>`<button type="button" role="tab" data-wm="${k}" aria-selected="${wmode===k}">${l}</button>`).join("")}</div>`:"";
     const start=`<button class="btn pri big wide" data-go="wstart">Mit ${esc(zn(wz))} loslegen</button>`;
     const form=!A||wmode==="guest"?`<h2>Wähle deinen Zweig</h2><p class="lead">Du bekommst sein Startdeck geschenkt. Alle anderen Lehrkräfte sammelst du über Packs.${A?" Ohne Konto bleibt dein Fortschritt nur in diesem Browser.":""}</p>${zweigPick()}${start}`
@@ -2150,7 +2158,7 @@ const Menu=(()=>{
     const art=CARDS.filter(c=>c.legend).slice(0,1).concat(CARDS.filter(c=>!c.legend).slice(0,2)).map(c=>c.id);
     return `<section class="welcome3"><div class="wcopy"><h1 class="wt">Lehrer<em>zimmer</em> Arena</h1><p class="tag">Das Sammelkartenspiel der FOS Holzkirchen</p>
       <span class="fan big" style="--w:110px;--h:154px">${art.map((id,i)=>`<span class="fc" style="--i:${i-1}">${miniCard(id,0.55)}</span>`).join("")}</span></div>
-      <div class="panel wform">${seg}${form}${wmsg?`<p class="warn" role="alert">${esc(wmsg)}</p>`:""}</div></section>`;
+      <div class="panel wform">${note}${seg}${form}${wmsg?`<p class="warn" role="alert">${esc(wmsg)}</p>`:""}</div></section>`;
   }
   function render(){
     const m=el();lastW=innerWidth;
