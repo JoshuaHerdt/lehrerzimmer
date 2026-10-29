@@ -165,20 +165,23 @@ body{margin:0;background:var(--night);color:var(--ink);font-family:var(--f-body)
 /* volle Karte (Vorschau, Auswahl) */
 .card.full{width:200px;height:280px;cursor:default}
 .card.full{overflow:hidden}
-.card.full .in{grid-template-rows:auto auto 54px auto 1fr auto;gap:3px;overflow:hidden}
+.card.full .in{grid-template-rows:auto auto 54px auto 1fr auto;grid-template-columns:minmax(0,1fr);gap:3px;overflow:hidden}
+.card.full .top{min-width:0}.card.full .top .nm{min-width:0;overflow-wrap:anywhere}.card.full .top .nm.long{font-size:14px}
 .card.full .nm{font-size:17px}
 .card.full .fach{font-size:10px;color:var(--ink-2);line-height:1.2}
+.card.full .fach .kind{color:var(--c);font-weight:700}
 .card.full .art{font-size:34px}
 .card.full .pass{font-size:8.6px;line-height:1.2;border:1px dashed color-mix(in srgb,var(--c) 60%,transparent);border-radius:5px;padding:3px 5px}
 .card.full .pass b{display:block;color:var(--c);font-size:10px}
 .card.full .atks{display:grid;gap:3px;align-content:start}
-.card.full .ar{display:grid;grid-template-columns:auto 1fr auto;gap:5px;align-items:center;border-top:1px solid var(--line);padding-top:3px}
+.card.full .ar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:5px;align-items:center;border-top:1px solid var(--line);padding-top:3px}
 .card.full .ar b{font-size:11.5px;line-height:1.1}
 .card.full .ar span.t{display:block;font-size:8.2px;line-height:1.15;color:var(--ink-2)}
 .card.full .ar .d{font-family:var(--f-display);font-weight:800;font-size:17px}
-.card.full .ar .cup{width:12px;height:12px}.card.full .ar .cup svg{width:8px;height:8px}
+.card.full .ar .cups{flex-wrap:wrap;max-width:40px;gap:1px}.card.full .ar .cup{width:12px;height:12px}.card.full .ar .cup svg{width:8px;height:8px}
 .card.full .ft{display:flex;justify-content:space-between;font-size:9px;color:var(--ink-2);gap:4px}
 .card.full.sup .in{grid-template-rows:auto auto 1fr auto}
+.card.full.dense .in{grid-template-rows:auto auto 26px auto 1fr auto}.card.full.dense .art{font-size:20px}
 .card.full.sup .art{font-size:48px}
 .card.full .txt{font-size:12px}
 /* Auswahlfenster der Engine */
@@ -190,6 +193,7 @@ body{margin:0;background:var(--night);color:var(--ink);font-family:var(--f-body)
 .mopt:hover .card,.mopt:focus-visible .card{outline:4px solid var(--gold);outline-offset:2px}
 .mview .mopt{cursor:default}.mview .mopt:hover .card{outline:none}
 .mview .mrow{gap:10px;flex-wrap:wrap;justify-content:center}.mview .mrow .btn{min-width:180px;min-height:48px;font-size:16px}
+.cup.free{font-style:normal;font-size:10px;font-weight:700;width:auto!important;padding:0 4px;border-radius:999px;background:var(--ok);color:#fff;display:inline-grid;place-items:center}
 .mopt .st{position:absolute;left:50%;bottom:-2px;transform:translate(-50%,50%);background:var(--ink);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
 .mrow{display:flex;gap:calc(var(--u)*8);justify-content:center;margin-top:calc(var(--u)*16);flex-wrap:wrap}
 .btn.pri{background:var(--pen);color:#fff}
@@ -669,14 +673,15 @@ window.claude={use:n=>window.__fbReady.then(a=>a?a[n]||null:null)};</script>
 const Engine=(()=>{
 /* ===== Kartendaten: FOS Holzkirchen =====
    Fächer laut Fachschaftsseiten von fos-holzkirchen.de (Stand Oktober 2026).
-   Spielwerte stammen aus 22 getesteten Kartentypen (tpl), Namen und Attacken passen zum Fach. */
+   Jede Lehrkraft hat ein eigenes Profil (KITS): KP, Rückzug, Fähigkeit und zwei Attacken passend zu Fach und Attackennamen.
+   Die Schulleitung ist stärker (mehr KP, Attacken bis 60 Schaden). TEMPLATES bleiben nur als Testvorlagen. */
 const SUBJ={
   MINT:{label:"Technik",v:"--mint"}, DEU:{label:"Deutsch",v:"--spr"}, FS:{label:"Int. Wirtschaft",v:"--kun"},
   GES:{label:"Sozialwesen",v:"--ges"}, WIR:{label:"Wirtschaft",v:"--spo"},
   SL:{label:"Schulleitung",v:"--sl"}, OFF:{label:"Fach folgt",v:"--off"}
 };
-const BEATS={MINT:"GES",GES:"WIR",WIR:"FS",FS:"DEU",DEU:"MINT"};
-const BEAT_REASON={MINT:"Daten statt Debatte",GES:"Erst die Ethik, dann der Gewinn",WIR:"Geld spricht jede Sprache",FS:"Die Welt spricht mehr als eine Sprache",DEU:"Textaufgaben"};
+const BEATS={MINT:"GES",GES:"WIR",WIR:"FS",FS:"MINT"};
+const BEAT_REASON={MINT:"Daten statt Debatte",GES:"Erst die Ethik, dann der Gewinn",WIR:"Geld spricht jede Sprache",FS:"Weltmarkt schlägt Werkbank"};
 const WEAKTO={}; Object.entries(BEATS).forEach(([a,b])=>WEAKTO[b]=a);
 /* Zweige (Fraktionen): Jede Fächergruppe gehört im Spiel zu dem Zweig, für den sie typisch ist.
    Deutsch, Schulleitung und „Fach folgt“ sind Allgemeinbildung und passen in jeden Zweig. */
@@ -694,49 +699,65 @@ const ZWEIG_KEYS=Object.keys(ZWEIGE);
 const zweigOf=c=>ZWEIGE[c.subj]?c.subj:null;
 
 const RULES={
-  attachPerTurn:1, firstTurnAttack:false, startEnergy:0, firstAttachBenchOnly:false,
+  attachPerTurn:1, firstTurnAttack:false, startEnergy:1, trostKaffee:1, comebackSupport:true, firstAttachBenchOnly:false,
   benchMax:3, benchPerTurn:1, startHand:4, recycleSupports:true, winPoints:15, koPoints:5, deckTeachers:10, deckSupports:5, maxSupportCopies:2, supportsPerTurn:1, supportFromTurn:2,
-  weakBonus:10, maxDmg:50, maxTurns:90, examTurn:40, examBonus:20,
+  weakBonus:10, maxDmg:50, maxDmgLegend:90, capByCost:[20,30,50,60,60], legendBonusCap:10, auraBonus:10, maxTurns:90, examTurn:40, examBonus:20,
   zweigMin:5, perks:true, jokers:true, jokerFromTurn:2, redraw:1, scorchDmg:20, healPerk:10, techMax:2, jokerHeal:20, spyDraw:3, medicEnergy:2
 };
 
 const TEMPLATES={"integral": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50, "fx": [{"t": "noRetreat"}]}]}, "voltmann": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "attachBench", "n": 1}]}, {"cost": 2, "dmg": 50}]}, "kolbe": {"hp": 70, "retreat": 2, "legend": false, "passiveKey": "armor10", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "fx": [{"t": "benchSplash", "n": 10}]}]}, "byte": {"hp": 70, "retreat": 0, "legend": false, "passiveKey": "backup", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healSelf", "n": 20}]}, {"cost": 2, "dmg": 50}]}, "komma": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "perOppEnergy", "n": 10}]}]}, "smalltalk": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "fx": [{"t": "draw", "n": 1}]}]}, "baguette": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healOne", "n": 30}]}, {"cost": 2, "dmg": 50, "fx": [{"t": "forceSwitch"}]}]}, "cicero": {"hp": 70, "retreat": 3, "legend": false, "passiveKey": "regen10", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "chronos": {"hp": 90, "retreat": 2, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "perKO", "n": 10}]}]}, "debatte": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 0, "fx": [{"t": "attachAny", "n": 2}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "gust"}]}]}, "atlas": {"hp": 80, "retreat": 2, "legend": false, "passiveKey": "onPlayAny", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "gnade": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": "comfort", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healAll", "n": 10}]}, {"cost": 2, "dmg": 40, "label": "40+", "fx": [{"t": "hpCompare", "n": 10}]}]}, "pfiff": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": "coach", "atks": [{"cost": 1, "dmg": 10, "fx": [{"t": "attachSelf", "n": 1}]}, {"cost": 2, "dmg": 50}]}, "zirkel": {"hp": 80, "retreat": 0, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50, "fx": [{"t": "freeSwitch"}]}]}, "voelker": {"hp": 80, "retreat": 2, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "snipe"}]}, {"cost": 2, "dmg": 50}]}, "urkunde": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30, "fx": [{"t": "selfDmg", "n": 10}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "drawOnKO", "n": 2}]}]}, "pinsel": {"hp": 80, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 0, "label": "?", "dice": true}, {"cost": 2, "dmg": 50, "fx": [{"t": "draw", "n": 1}]}]}, "dur": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": "onPlaySelf", "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 30, "label": "30+", "fx": [{"t": "perOwnBench", "n": 10}]}]}, "buehne": {"hp": 70, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 30}, {"cost": 2, "dmg": 50}]}, "ton": {"hp": 90, "retreat": 1, "legend": false, "passiveKey": null, "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "healSelf", "n": 10}]}, {"cost": 2, "dmg": 50}]}, "direktor": {"hp": 80, "retreat": 3, "legend": true, "passiveKey": "onPlayAny", "atks": [{"cost": 1, "dmg": 10, "fx": [{"t": "benchSplash", "n": 10}]}, {"cost": 2, "dmg": 50}]}, "stempel": {"hp": 70, "retreat": 0, "legend": true, "passiveKey": "onPlayTwo", "atks": [{"cost": 1, "dmg": 20, "fx": [{"t": "draw", "n": 1}]}, {"cost": 2, "dmg": 40, "fx": [{"t": "strip", "n": 1}]}]}};
 
 const PASSIVE_TEXT={
-  armor10:"Diese Lehrkraft erhält durch Attacken 10 Schaden weniger.",
-  backup:"Hat diese Lehrkraft Feierabend, geht ihre Energie nicht verloren: Sie wandert auf eine Lehrkraft auf deiner Bank.",
-  regen10:"Zu Beginn deines Zuges heilt diese Lehrkraft 10 Schaden.",
-  comfort:"Hat eine deiner anderen Lehrkräfte Feierabend, lege 1 Energie an diese Lehrkraft.",
-  coach:"Solange diese Lehrkraft im Spiel ist, kostet der Rückzug deiner anderen Lehrkräfte 1 Energie weniger.",
-  onPlaySelf:"Kommt diese Lehrkraft aus deiner Hand ins Spiel, lege 1 Energie an sie.",
-  onPlayAny:"Kommt diese Lehrkraft aus deiner Hand ins Spiel, lege 1 Energie an eine deiner Lehrkräfte.",
-  onPlayTwo:"Kommt diese Lehrkraft aus deiner Hand ins Spiel, lege 2 Energie beliebig verteilt an deine Lehrkräfte."
+  armor10:"Erhält durch Attacken 10 Schaden weniger.",
+  backup:"Hat sie Feierabend, wandert ihre Energie auf eine Lehrkraft auf deiner Bank.",
+  regen10:"Heilt zu Beginn deines Zuges 10 Schaden.",
+  comfort:"Fällt eine andere deiner Lehrkräfte aus: +1 Energie hier.",
+  coach:"Rückzug deiner anderen Lehrkräfte kostet 1 Energie weniger.",
+  onPlaySelf:"Beim Ausspielen: 1 Energie an sie.",
+  onPlayAny:"Beim Ausspielen: 1 Energie an eine deiner Lehrkräfte.",
+  onPlayTwo:"Beim Ausspielen: 2 Energie beliebig verteilt an deine Lehrkräfte.",
+  onPlayDraw:"Beim Ausspielen: Ziehe 1 Karte.",
+  onPlaySearch:"Beim Ausspielen: Nimm eine Lehrkraft aus deinem Deck.",
+  onPlayAll:"Beim Ausspielen: 1 Energie an jede deiner Lehrkräfte.",
+  interest:"Auf der Bank: zu Zugbeginn +1 Energie (bis 2).",
+  benchHeal:"Auf der Bank: Deine aktive Lehrkraft heilt am Zugende 10.",
+  vice:"Fällt eine andere deiner Lehrkräfte aus: Heile 30, +1 Energie.",
+  aura:"Deine anderen Lehrkräfte dieser Gruppe machen +10 Schaden."
 };
 function fxText(a){
   if(a.dice) return "Würfle: 1–2 → 10 Schaden, 3–4 → 30, 5–6 → 50.";
   const t=[];
   (a.fx||[]).forEach(f=>{
     const m={
-      noRetreat:"Der Gegner darf seine aktive Lehrkraft in seinem nächsten Zug nicht auswechseln (weder durch Rückzug noch durch Karten oder Attacken).",
-      attachBench:"Lege 1 Energie an eine Lehrkraft auf deiner Bank.",
-      selfDmg:`Diese Lehrkraft erhält ${f.n} Schaden.`,
-      benchSplash:"Zusätzlich 10 Schaden an jeder Lehrkraft auf der gegnerischen Bank.",
-      healSelf:`Heile ${f.n} Schaden bei dieser Lehrkraft.`,
-      perOppEnergy:"+10 Schaden für jede Energie an der gegnerischen aktiven Lehrkraft.",
-      draw:"Ziehe 1 Karte.",
-      healOne:"Heile 30 Schaden bei einer deiner Lehrkräfte.",
-      forceSwitch:"Danach muss der Gegner seine aktive Lehrkraft gegen eine von seiner Bank tauschen (er wählt).",
-      perKO:"+10 Schaden für jede Lehrkraft, die in diesem Spiel schon Feierabend hat (beide Seiten).",
-      attachAny:"Lege 2 Energie an eine deiner Lehrkräfte.",
-      gust:"Hole vorher eine Lehrkraft von der gegnerischen Bank nach vorn. Sie wird aktiv und erhält den Schaden.",
-      healAll:"Heile 10 Schaden bei jeder deiner Lehrkräfte.",
-      hpCompare:"+10 Schaden, wenn die gegnerische Lehrkraft mehr KP übrig hat als diese.",
-      attachSelf:"Lege 1 Energie an diese Lehrkraft.",
-      freeSwitch:"Danach darfst du diese Lehrkraft kostenlos mit einer Lehrkraft auf deiner Bank tauschen.",
+      noRetreat:"Gegner kann nächsten Zug nicht wechseln.",
+      attachBench:`${f.n||1} Energie an eine Bank-Lehrkraft.`,
+      selfDmg:`Sie erhält selbst ${f.n} Schaden.`,
+      benchSplash:`Dazu ${f.n} an jeder gegnerischen Bank-Lehrkraft.`,
+      healSelf:`Heile sie um ${f.n}.`,
+      perOppEnergy:`+${f.n} je Energie an der gegnerischen aktiven Lehrkraft.`,
+      breakCap:"Ohne Schadensgrenze!",
+      draw:f.n>1?`Ziehe ${f.n} Karten.`:"Ziehe 1 Karte.",
+      healOne:`Heile eine deiner Lehrkräfte um ${f.n}.`,
+      forceSwitch:"Danach muss der Gegner auswechseln.",
+      perKO:`+${f.n} je Lehrkraft mit Feierabend (beide Seiten).`,
+      attachAny:`${f.n} Energie an eine deiner Lehrkräfte.`,
+      gust:"Hole vorher eine gegnerische Bank-Lehrkraft nach vorn, sie erhält den Schaden.",
+      healAll:`Heile alle deine Lehrkräfte um ${f.n}.`,
+      hpCompare:`+${f.n}, wenn das Ziel mehr KP übrig hat.`,
+      attachSelf:`${f.n} Energie an sie.`,
+      freeSwitch:"Danach darfst du sie kostenlos auswechseln.",
       snipe:"Trifft eine gegnerische Lehrkraft deiner Wahl, auch auf der Bank.",
-      drawOnKO:"Hat die gegnerische Lehrkraft durch diese Attacke Feierabend, ziehe 2 Karten.",
-      perOwnBench:"+10 Schaden für jede Lehrkraft auf deiner Bank.",
-      strip:"Die gegnerische aktive Lehrkraft verliert 1 Energie."
+      drawOnKO:`Erledigt sie das Ziel: Ziehe ${f.n} ${f.n>1?"Karten":"Karte"}.`,
+      perOwnBench:`+${f.n} je Lehrkraft auf deiner Bank.`,
+      strip:`Gegner verliert ${f.n} Energie (aktive Lehrkraft).`,
+      vsDamaged:`+${f.n}, wenn das Ziel schon Schaden hat.`,
+      lowHp:`+${f.n}, wenn sie höchstens 40 KP hat.`,
+      perOwnEnergy:`+${f.n} je Energie, die danach noch an ihr ist.`,
+      lockAtk:"Nächster Zug: Der Gegner kann keine Attacke ab 2 Energie nutzen.",
+      splashOne:`Dazu ${f.n} Schaden an einer Bank-Lehrkraft deiner Wahl.`,
+      steal:"Stiehlt dem Gegner 1 Energie (aktive Lehrkraft).",
+      twice:`Trifft zweimal (zusammen höchstens ${RULES.capByCost[Math.min(a.cost,4)]}).`,
+      noSpend:"Verbraucht keine Energie."
     }[f.t]; if(m) t.push(m);
   });
   return t.join(" ");
@@ -747,8 +768,8 @@ const TEACHERS=[
  ["basche","Sally Basche","FS","Englisch · Spanisch","","voelker","","¡Vamos!","Speaking Test"],
  ["barth","Lisa Barth","WIR","Englisch · Wirtschaft","","voelker","","Business Call","Verhandlungsgeschick"],
  ["berkmann","Franziska Berkmann","GES","Mathematik · Pädagogik/Psychologie","","dur","Motivation","Lerntheorie","Gruppendynamik"],
- ["blome","Bianca Blome","OFF","Fach folgt","","byte","Sicherungskopie","Wiederholung","Stegreifaufgabe"],
- ["dengler","Stephanie Dengler","DEU","Deutsch · Wirtschaft","","zirkel","","Geschäftsbrief","Perspektivwechsel"],
+ ["blome","Bianca Blome","GES","Fach folgt","","byte","Sicherungskopie","Wiederholung","Stegreifaufgabe"],
+ ["dengler","Stephanie Dengler","WIR","Deutsch · Wirtschaft","","zirkel","","Geschäftsbrief","Perspektivwechsel"],
  ["draeger","Stine Draeger","WIR","Wirtschaft","","urkunde","Startkapital","Überstunden","Jahresabschluss"],
  ["dreyer","Lydia Dreyer-Haslbeck","GES","Deutsch · ev. Religion","","gnade","Beistand","Nächstenliebe","Gewissensfrage"],
  ["forster","Michael Forster","GES","Deutsch · Ethik","","voelker","","Trolley-Problem","Kategorischer Imperativ"],
@@ -756,9 +777,9 @@ const TEACHERS=[
  ["gerhardt","Mariska Gerhardt","MINT","Biologie · Chemie · Naturwissenschaften","","ton","","Zellteilung","Photosynthese"],
  ["gerrer","Stefanie Gerrer","GES","Chemie · Politik und Gesellschaft · Naturwissenschaften","","kolbe","Schutzbrille","Redoxreaktion","Demonstration"],
  ["gilbert","Katharina Gilbert","FS","Englisch","","pfiff","Exchange Program","Warm-up","Essay Writing"],
- ["goerlich","Melanie Görlich","DEU","Deutsch · Englisch","","voltmann","","Übersetzung","Sprachgewalt"],
+ ["goerlich","Melanie Görlich","FS","Deutsch · Englisch","","voltmann","","Übersetzung","Sprachgewalt"],
  ["gremm","Daniela Gremm","WIR","Wirtschaft","","smalltalk","Kassensturz","Buchungssatz","Bilanzanalyse"],
- ["hampel","Christina Hampel","OFF","Fach folgt","","ton","","Hausaufgaben-Check","Schulaufgabe"],
+ ["hampel","Christina Hampel","MINT","Fach folgt","","ton","","Hausaufgaben-Check","Schulaufgabe"],
  ["hanisch","Claudia Hanisch","MINT","Biologie · Chemie · Naturwissenschaften","Fachbetreuung Biologie, Chemie, Naturwissenschaften","kolbe","Laborkittel","Säuretest","Verpuffung"],
  ["hautsch","Manuel Hautsch","FS","Englisch · kath. Religion · Wirtschaft","stellv. Fachschaftsleitung Wirtschaft","kolbe","Wörterbuch-Schild","Phrasal Verbs","Vocabulary Storm"],
  ["hofmann","Christiane Hofmann","WIR","Englisch · Wirtschaft","","baguette","","Teambuilding","Umstrukturierung"],
@@ -771,14 +792,14 @@ const TEACHERS=[
  ["kubis","Stefan Kubis","MINT","Physik · Technologie · Naturwissenschaften","","zirkel","","Hebelgesetz","Umschalter"],
  ["laubmeier","Andrea Laubmeier","WIR","Mathematik · Wirtschaft","","cicero","Rücklagen","Prozentrechnung","Kostenfunktion"],
  ["lederer","Michaela Lederer","WIR","Mathematik · Wirtschaft","","dur","Gut kalkuliert","Break-even","Arbeitsteilung"],
- ["lehmann","Johanna Lehmann","DEU","Deutsch","","integral","","Rotstift","Unangekündigtes Diktat"],
+ ["lehmann","Johanna Lehmann","MINT","Deutsch","","integral","","Rotstift","Unangekündigtes Diktat"],
  ["loechinger","Bettina Löchinger","FS","Englisch · Spanisch","","baguette","","Siesta","Rollenspiel"],
  ["maerz","Maria März","WIR","Wirtschaft · Politik und Gesellschaft","","komma","","Angebot und Nachfrage","Steuerprüfung"],
- ["mayr","Christopher Mayr","DEU","Deutsch · Geschichte","","chronos","","Quellenarbeit","Aus der Geschichte lernen"],
+ ["mayr","Christopher Mayr","GES","Deutsch · Geschichte","","chronos","","Quellenarbeit","Aus der Geschichte lernen"],
  ["meier","Richard Meier","MINT","Mathematik · Physik · Naturwissenschaften","","pinsel","","Stochastik","Gleichungssystem"],
  ["melzer","Mathias Melzer","FS","Englisch · Spanisch","","buehne","","Conversation","Oral Exam"],
  ["milak","Lejla Milak","GES","Deutsch · Geschichte · Politik und Gesellschaft","Fachbetreuung Geschichte, PuG","atlas","Fachbetreuung","Zeitstrahl","Epochenwandel"],
- ["nadler","Julia Nadler","DEU","Deutsch · Geschichte · Politik und Gesellschaft","","ton","","Korrekturrand","Sachtextanalyse"],
+ ["nadler","Julia Nadler","GES","Deutsch · Geschichte · Politik und Gesellschaft","","ton","","Korrekturrand","Sachtextanalyse"],
  ["niesz","Cornelia Niesz","MINT","Mathematik · Physik · Naturwissenschaften","komm. Fachbetreuung Physik/Technologie","komma","","Freier Fall","Energieerhaltung"],
  ["ostgen","Maximilian Ostgen","GES","Wirtschaft · kath. Religion","","baguette","","Segen","Gleichnis"],
  ["pagel","Andreas Pagel","GES","Deutsch · Geschichte · Politik und Gesellschaft","","debatte","","Wahlkampf","Misstrauensvotum"],
@@ -786,29 +807,136 @@ const TEACHERS=[
  ["prim","Alexander Prim","MINT","Mathematik · Physik","Fachschaftsleitung Mathematik","voltmann","","Ohmsches Gesetz","Hochspannung"],
  ["ram","Fabian Ram","WIR","Deutsch · Wirtschaft","","gnade","Betriebsrat","Betriebsklima","Tarifverhandlung"],
  ["reiter","Annika Reiter","MINT","Mathematik","","atlas","Formelsammlung","Bruchrechnen","Kurvendiskussion"],
- ["romatka","Dr. Regine Romatka-Hort","DEU","Deutsch · Geschichte · Politik und Gesellschaft","","cicero","Zeitlose Klassiker","Zitat-Analyse","Klassikerlektüre"],
+ ["romatka","Dr. Regine Romatka-Hort","GES","Deutsch · Geschichte · Politik und Gesellschaft","","cicero","Zeitlose Klassiker","Zitat-Analyse","Klassikerlektüre"],
  ["rostas","Stefan Rostas","MINT","Mathematik","","buehne","","Termumformung","Beweis durch Widerspruch"],
  ["ruppelt","Mark Ruppelt","FS","Englisch · Geschichte","Ansprechpartner CAE","integral","","Grammar Check","Pop Quiz"],
  ["schellenberger","Stefan Schellenberger","SL","Schulleitung","Schulleiter","direktor","Dienstbesprechung","Durchsage","Schulleiterentscheid"],
- ["schaetzle","Korbinian Schätzle","DEU","Deutsch · Geschichte · Politik und Gesellschaft","komm. Fachbereichsleitung Deutsch","atlas","Fachbereichsleitung","Textanalyse","Erörterung"],
+ ["schaetzle","Korbinian Schätzle","FS","Deutsch · Geschichte · Politik und Gesellschaft","komm. Fachbereichsleitung Deutsch","atlas","Fachbereichsleitung","Textanalyse","Erörterung"],
  ["schellhorn","Gebhard Schellhorn","GES","Wirtschaft · Ethik","Schulbeauftragter für die fachpraktische Ausbildung","urkunde","Praktikumsplatz","Praxiseinsatz","Praktikumsbericht"],
  ["schmidt","Kilian Schmidt","GES","Englisch · Pädagogik/Psychologie","","pfiff","Pausenaufsicht","Motivationsschub","Positive Verstärkung"],
- ["schneider","Eva Schneider","DEU","Deutsch","","komma","","Kommasetzung","Interpretation"],
- ["stein","Patrick Stein","DEU","Deutsch","","pinsel","","Kreatives Schreiben","Gedichtanalyse"],
+ ["schneider","Eva Schneider","WIR","Deutsch","","komma","","Kommasetzung","Interpretation"],
+ ["stein","Patrick Stein","MINT","Deutsch","","pinsel","","Kreatives Schreiben","Gedichtanalyse"],
  ["stoiber","Dario Stoiber","WIR","Mathematik · Wirtschaft","Systembetreuung","byte","Cloud-Backup","Neustart","Systemupdate"],
  ["trainer","Carina Trainer","WIR","Wirtschaft","","pfiff","Personalplanung","Zinseszins","Marktanalyse"],
- ["unterlinner","Kathrin Unterlinner","OFF","Fach folgt","","buehne","","Tafelbild","Abfrage"],
- ["weiser","Stephanie Weiser","DEU","Deutsch","","smalltalk","Lesestoff","Inhaltsangabe","Lektüre"],
+ ["unterlinner","Kathrin Unterlinner","WIR","Fach folgt","","buehne","","Tafelbild","Abfrage"],
+ ["weiser","Stephanie Weiser","FS","Deutsch","","smalltalk","Lesestoff","Inhaltsangabe","Lektüre"],
  ["ziliotto","Anne Ziliotto","FS","Englisch · Französisch","Fachschaftsleitung Englisch","dur","Bonjour!","Vocabulary","Sprachaustausch"]
 ];
+/* Eigene Profile: id → [KP, Rückzug, Fähigkeit|null, Attacke 1, Attacke 2]; Attacke = [Kosten, Schaden, Effekt…], Effekt "name" oder "name:zahl" */
+const KITS={
+  // Technik
+  fuchs:[80,0,null,[1,30],[2,50,"noRetreat"]],
+  gerhardt:[110,3,null,[1,20,"healSelf:20"],[2,40,"attachSelf:1"]],
+  hanisch:[90,2,"armor10",[1,20,"strip:1"],[3,60,"selfDmg:10"]],
+  hoffmann:[90,1,null,[1,20,"snipe"],[2,40,"vsDamaged:10"]],
+  kubis:[90,0,null,[1,30,"hpCompare:20"],[2,40,"freeSwitch"]],
+  meier:[90,1,null,[1,0,"dice"],[3,50,"perOwnBench:10"]],
+  niesz:[90,2,null,[1,30],[3,40,"noSpend"]],
+  prim:[90,1,"aura",[1,10,"attachBench:1"],[3,60]],
+  reiter:[90,1,"onPlayAny",[1,30],[2,50]],
+  rostas:[90,1,null,[1,30,"freeSwitch"],[2,30,"lowHp:50","breakCap"]],
+  // Wirtschaft und Verwaltung
+  barth:[80,1,null,[1,20,"snipe"],[2,40,"strip:1"]],
+  draeger:[80,2,"onPlaySelf",[1,30,"selfDmg:10"],[3,60,"drawOnKO:1"]],
+  gremm:[80,1,"onPlayDraw",[1,20,"draw:1"],[2,40,"perOppEnergy:10"]],
+  hofmann:[90,1,null,[1,10,"healAll:20"],[2,40,"forceSwitch"]],
+  koppitz:[80,2,"aura",[1,0,"attachAny:2"],[2,40,"steal:1"]],
+  laubmeier:[90,2,"interest",[1,30],[3,40,"perOwnEnergy:10"]],
+  lederer:[80,1,"onPlayAny",[1,30],[2,20,"perOwnBench:10"]],
+  maerz:[100,2,null,[1,20,"strip:1"],[3,50,"strip:2"]],
+  ram:[80,1,"comfort",[1,20,"attachBench:1"],[2,40,"noRetreat"]],
+  stoiber:[100,2,"backup",[1,0,"healSelf:40"],[3,60]],
+  trainer:[80,0,"onPlaySearch",[0,20],[2,40,"perOwnEnergy:10"]],
+  // Internationale Wirtschaft
+  basche:[80,1,null,[1,20,"snipe"],[2,50]],
+  gilbert:[80,1,"coach",[1,20,"attachSelf:1"],[3,50,"draw:2"]],
+  hautsch:[90,3,"armor10",[1,20],[3,40,"benchSplash:10"]],
+  hohenleutner:[90,0,null,[0,10,"draw:1"],[2,50,"forceSwitch"]],
+  kohlmaier:[80,1,"onPlaySelf",[1,30],[3,50,"lockAtk"]],
+  loechinger:[90,1,null,[1,20,"healSelf:30"],[2,40,"strip:1"]],
+  melzer:[90,2,null,[1,20,"draw:1"],[3,60,"noRetreat"]],
+  poeschl:[80,0,null,[0,20],[2,50]],
+  ruppelt:[80,1,null,[1,30,"strip:1"],[2,50]],
+  ziliotto:[90,1,"aura",[1,20,"draw:1"],[2,40,"attachBench:1"]],
+  // Sozialwesen
+  berkmann:[80,1,"onPlaySelf",[1,20,"draw:1"],[2,20,"perOwnBench:10"]],
+  dreyer:[80,1,"benchHeal",[1,10,"healAll:10"],[2,30,"hpCompare:10"]],
+  forster:[80,1,null,[1,20,"splashOne:10"],[2,40]],
+  gerrer:[90,3,"armor10",[1,20],[3,40,"noRetreat"]],
+  hohnke:[90,2,null,[1,30],[3,30,"twice"]],
+  milak:[90,2,"aura",[1,30],[2,40]],
+  ostgen:[80,1,null,[1,10,"healOne:20"],[2,40,"draw:1"]],
+  pagel:[80,1,null,[1,10,"attachBench:1"],[2,40,"gust"]],
+  schellhorn:[80,0,"onPlayAny",[1,30],[2,40]],
+  schmidt:[80,1,"coach",[0,10,"attachAny:1"],[2,30,"healAll:10"]],
+  // Deutsch
+  dengler:[80,0,null,[1,30],[2,50,"freeSwitch"]],
+  goerlich:[90,2,null,[1,30],[4,60,"benchSplash:20"]],
+  lehmann:[90,1,null,[1,20,"vsDamaged:20"],[2,40,"lockAtk"]],
+  mayr:[90,1,null,[1,20,"draw:1"],[3,40,"perKO:10"]],
+  nadler:[100,3,null,[1,30],[3,50,"healSelf:20"]],
+  romatka:[80,2,"regen10",[1,30],[2,50]],
+  schaetzle:[80,2,"aura",[1,30],[2,40,"draw:1"]],
+  schneider:[90,1,null,[1,30],[2,20,"perOppEnergy:20","breakCap"]],
+  stein:[90,1,null,[1,0,"dice"],[2,40,"vsDamaged:10"]],
+  weiser:[80,1,"onPlayDraw",[1,30],[2,40,"healSelf:10"]],
+  // Fach folgt
+  blome:[80,0,"backup",[1,20,"healSelf:20"],[2,50]],
+  hampel:[90,2,null,[1,20,"strip:1"],[3,60,"lockAtk"]],
+  unterlinner:[80,1,null,[1,30,"draw:1"],[2,50]],
+  // Schulleitung
+  schellenberger:[110,3,"onPlayAll",[1,20,"benchSplash:10"],[4,70,"forceSwitch"],true],
+  karrer:[100,1,"vice",[1,30,"draw:1"],[3,60,"strip:1"],true]
+};
+/* Rollen: wofür eine Lehrkraft gut ist (steht auf der Karte) */
+const ROLES={
+  Sprinter:"Billig und schnell: greift früh an und zieht sich kostenlos zurück.",
+  Allrounder:"Solide Werte, passt in jedes Deck.",
+  Kraftpaket:"Braucht viel Energie, trifft dann aber richtig hart.",
+  Bollwerk:"Sehr viele KP: hält lange durch und bremst den Gegner aus.",
+  Ausdauer:"Heilt sich selbst und bleibt dadurch lange vorne.",
+  Helfer:"Heilt dein Team.",
+  Motor:"Verteilt Energie, damit deine Kraftpakete schneller loslegen.",
+  Taktik:"Stört den Gegner: nimmt Energie, sperrt Attacken oder erzwingt Wechsel.",
+  Fernkampf:"Trifft auch Lehrkräfte auf der gegnerischen Bank.",
+  Spätstarter:"Wird im Lauf der Partie immer stärker.",
+  Planer:"Zieht Karten und sorgt für Nachschub.",
+  Zufall:"Würfelt: von schwach bis richtig stark ist alles drin.",
+  Fachschaft:"Macht die anderen Lehrkräfte ihrer Gruppe stärker.",
+  Comeback:"Am stärksten, wenn es eng wird.",
+  Teamplayer:"Je voller deine Bank, desto stärker.",
+  Konter:"Bestraft Gegner, die viel Energie angesammelt haben.",
+  Schulleitung:"Die stärksten Karten im Spiel. Höchstens eine pro Deck."
+};
+const ROLE={fuchs:"Sprinter",gerhardt:"Bollwerk",hanisch:"Kraftpaket",hoffmann:"Fernkampf",kubis:"Taktik",meier:"Zufall",niesz:"Spätstarter",prim:"Fachschaft",reiter:"Allrounder",rostas:"Comeback",
+  barth:"Fernkampf",draeger:"Kraftpaket",gremm:"Planer",hofmann:"Helfer",koppitz:"Fachschaft",laubmeier:"Spätstarter",lederer:"Teamplayer",maerz:"Taktik",ram:"Motor",stoiber:"Bollwerk",trainer:"Sprinter",
+  basche:"Fernkampf",gilbert:"Planer",hautsch:"Bollwerk",hohenleutner:"Sprinter",kohlmaier:"Taktik",loechinger:"Ausdauer",melzer:"Kraftpaket",poeschl:"Sprinter",ruppelt:"Allrounder",ziliotto:"Fachschaft",
+  berkmann:"Teamplayer",dreyer:"Helfer",forster:"Fernkampf",gerrer:"Bollwerk",hohnke:"Kraftpaket",milak:"Fachschaft",ostgen:"Helfer",pagel:"Taktik",schellhorn:"Sprinter",schmidt:"Motor",
+  dengler:"Sprinter",goerlich:"Kraftpaket",lehmann:"Taktik",mayr:"Spätstarter",nadler:"Bollwerk",romatka:"Ausdauer",schaetzle:"Fachschaft",schneider:"Konter",stein:"Zufall",weiser:"Planer",
+  blome:"Ausdauer",hampel:"Taktik",unterlinner:"Allrounder",schellenberger:"Schulleitung",karrer:"Schulleitung"};
+const SCALE={breakCap:"+",perOppEnergy:"+",perKO:"+",hpCompare:"+",perOwnBench:"+",vsDamaged:"+",lowHp:"+",perOwnEnergy:"+"};
+function kitAtk([cost,dmg,...fx]){
+  const a={cost,dmg}; const F=fx.filter(x=>x!=="dice").map(x=>{const [t,n]=x.split(":");return n==null?{t}:{t,n:+n};});
+  if(fx.includes("dice")){a.dice=true;a.label="?";}
+  if(F.length) a.fx=F;
+  if(F.some(f=>SCALE[f.t])) a.label=dmg+"+";
+  if(F.some(f=>f.t==="twice")) a.label="2×"+dmg;
+  return a;
+}
 const CARDS=TEACHERS.map(([id,name,subj,fach,role,tpl,pn,a1,a2])=>{
-  const T=TEMPLATES[tpl]; if(!T) throw new Error("Kartentyp fehlt: "+tpl);
-  const c={id,name,subj,fach,role,tpl,hp:T.hp,retreat:T.retreat,
-    atks:T.atks.map((a,k)=>Object.assign(JSON.parse(JSON.stringify(a)),{name:k?a2:a1,text:fxText(a)}))};
-  if(T.legend) c.legend=true;
-  if(T.passiveKey) c.passive={name:pn||"Fähigkeit",text:PASSIVE_TEXT[T.passiveKey],key:T.passiveKey};
+  const K=KITS[id]; if(!K) throw new Error("Profil fehlt: "+id);
+  const [hp,retreat,pk,k1,k2,legend]=K;
+  const c={id,name,subj,fach,role,tpl,hp,retreat,
+    atks:[k1,k2].map((x,k)=>{const a=kitAtk(x);return Object.assign(a,{name:k?a2:a1,text:fxText(a)});})};
+  if(legend) c.legend=true;
+  c.kind=ROLE[id]||"Allrounder";
+  if(pk) c.passive={name:pn||{koppitz:"Fachschaft Wirtschaft",prim:"Fachschaft Mathematik"}[id]||"Fähigkeit",text:pk==="aura"?`Andere ${SUBJ[subj].label}-Lehrkräfte von dir: +10 Schaden.`:PASSIVE_TEXT[pk],key:pk};
   return c;
 });
+// Testvorlagen: Karte mit den Werten eines alten Kartentyps
+function fromTemplate(tpl){const T=TEMPLATES[tpl];if(!T)return null;
+  const c={id:"tpl-"+tpl,name:"Vorlage "+tpl,subj:"SL",fach:"",role:"",tpl,hp:T.hp,retreat:T.retreat,atks:T.atks.map((a,k)=>Object.assign(JSON.parse(JSON.stringify(a)),{name:tpl+(k+1),text:fxText(a)}))};
+  if(T.legend)c.legend=true;if(T.passiveKey)c.passive={name:"Fähigkeit",text:PASSIVE_TEXT[T.passiveKey],key:T.passiveKey};return c;}
 const RECOMMENDED=["fuchs","prim","lehmann","schneider","koppitz","hofmann","melzer","gilbert","milak","dreyer"];
 const byId=id=>CARDS.find(c=>c.id===id);
 const SUPPORTS=[
@@ -829,11 +957,12 @@ const SUPPORTS=[
 const supById=id=>SUPPORTS.find(x=>x.id===id);
 const RECOMMENDED_SUPPORTS=["maschine","pausenbrot","thermos","vertretung","konferenz"];
 // Startdecks pro Zweig (getestet: 50–59 % gegen zufällige Computerdecks)
+// Startdecks: 10 Lehrkräfte des eigenen Zweigs, keine Schulleitung; per Simulation auf je 49–52 % gegeneinander ausgeglichen
 const RECOMMENDED_Z={
-  MINT:["fuchs","reiter","hoffmann","hanisch","prim","gerhardt","kubis","lehmann","hautsch","romatka"],
-  WIR:["stoiber","barth","draeger","laubmeier","hofmann","gremm","maerz","reiter","gerhardt","schellenberger"],
-  FS:["gilbert","poeschl","ruppelt","kohlmaier","hohenleutner","ziliotto","barth","schaetzle","weiser","meier"],
-  GES:["schmidt","pagel","ostgen","milak","berkmann","hohnke","lehmann","barth","hautsch","kohlmaier"]};
+  MINT:["stein", "kubis", "hanisch", "fuchs", "rostas", "reiter", "niesz", "hoffmann", "hampel", "meier"],
+  WIR:["schneider", "trainer", "barth", "ram", "stoiber", "maerz", "unterlinner", "koppitz", "laubmeier", "lederer"],
+  FS:["basche", "hautsch", "schaetzle", "kohlmaier", "melzer", "poeschl", "gilbert", "goerlich", "loechinger", "ziliotto"],
+  GES:["schellhorn", "ostgen", "gerrer", "schmidt", "pagel", "milak", "hohnke", "romatka", "mayr", "dreyer"]};
 const RECOMMENDED_Z_SUPPORTS=["pausenbrot","thermos","feueralarm","hospitation","nachpruefung"];
 /* Energiekarten: alle wirken gleich (1 Energie), unterscheiden sich nur in Motiv und Seltenheit */
 const ENERGIES=[
@@ -885,7 +1014,7 @@ function createGame(ids0,ids1,hooks={},opts={}){
   const rng=opts.rng||Math.random;
   const Z=opts.zweig||[];
   const G={R,rng,hooks,players:[newPlayer(ids0,rng,Z[0]),newPlayer(ids1,rng,Z[1])],cur:0,turn:0,starter:0,attachLeft:0,retreated:false,
-    noRetreat:[false,false],over:false,winner:null,reason:"",log:[],flash:new Set(),busy:true,sel:null,
+    noRetreat:[false,false],lockAtk:[false,false],over:false,winner:null,reason:"",log:[],flash:new Set(),busy:true,sel:null,
     human:opts.human??-1,names:opts.names||["Spieler 1","Spieler 2"],forceStarter:opts.starter,
     stats:{maxHit:0,oneShots:0,oneShotsEarly:0,kos:0,firstKOTurn:null,attacks:0,strong:0,leadChanges:0,leader:-1,deficit:[0,0],
            idleTurns:0,attached:0,helperKaffee:0,onPlayKaffee:0,supportKaffee:0,supportsPlayed:0,spent:0,lostOnKO:0,mulligans:0,deckOut:0,benchThisTurn:0,maxBenchTurn:0,multiBenchTurns:0,starterNoBenchT1:0,deadSupports:0,endByNoTeacher:0,comfort:0,maxHand:0,
@@ -927,6 +1056,11 @@ async function onPlay(G,pi,i){
     const t=await choose(G,pi,`${nm} (${i.card.name}): Welche Lehrkraft bekommt 1 Energie?`,inPlay(p).map(x=>({inst:x,score:needScore(x)+(x===p.active?2:0)})));
     if(t){log(G,`${i.card.name}: ${nm}!`,pi);addKaffee(G,pi,t,1,"onPlay");}
   }
+  if(k==="onPlayDraw"){const n=draw(p,1);log(G,`${i.card.name}: ${nm}! ${who(G,pi)} zieht ${n} Karte${n===1?"":"n"}.`,pi);}
+  if(k==="onPlayAll"){log(G,`${i.card.name}: ${nm}!`,pi);inPlay(p).forEach(x=>addKaffee(G,pi,x,1,"onPlay"));}
+  if(k==="onPlaySearch"){const pool=teachersIn(p.deck);
+    if(pool.length){const t=await choose(G,pi,`${nm} (${i.card.name}): Welche Lehrkraft nimmst du aus dem Deck?`,pool.map(x=>({inst:x,score:x.card.hp+(x.card.legend?50:0)})));
+      if(t){p.deck.splice(p.deck.indexOf(t),1);p.hand.push(t);shuffle(p.deck,G.rng);log(G,`${i.card.name}: ${nm}! ${who(G,pi)} nimmt ${t.card.name} auf die Hand.`,pi);}}}
   if(k==="onPlayTwo"){
     log(G,`${i.card.name}: ${nm}!`,pi);
     for(let n=0;n<2;n++){const t=await choose(G,pi,`${nm}: Wer bekommt Energie ${n+1} von 2?`,inPlay(p).map(x=>({inst:x,score:needScore(x)+(x===p.active?2:0)})));if(t)addKaffee(G,pi,t,1,"onPlay");}
@@ -1024,18 +1158,23 @@ function canRetreat(G,pi){const p=G.players[pi];return !!(G.cur===pi&&!G.over&&p
 function swapActive(p,t){const k=p.bench.indexOf(t);p.bench[k]=p.active;p.active=t;}
 function doRetreat(G,pi,t){const p=G.players[pi];const c=retreatCost(p,p.active);spendKaffee(G,p.active,c);
   log(G,`${p.active.card.name} zieht sich zurück${c?` (${c} Energie verbraucht)`:""}. ${t.card.name} kommt nach vorn.`,pi);swapActive(p,t);G.retreated=true;}
-function canAttack(G,pi,k){const p=G.players[pi];const a=p.active;if(!a||G.cur!==pi||G.over)return false;if(G.turn===1&&!G.R.firstTurnAttack)return false;return a.energy>=a.card.atks[k].cost;}
+function canAttack(G,pi,k){const p=G.players[pi];const a=p.active;if(!a||G.cur!==pi||G.over)return false;if(G.turn===1&&!G.R.firstTurnAttack)return false;if(G.lockAtk&&G.lockAtk[pi]&&a.card.atks[k].cost>=2)return false;return a.energy>=a.card.atks[k].cost;}
 function calcDmg(G,src,tgt,n,weak=true){let d=n;if(weak&&d>0&&BEATS[src.card.subj]===tgt.card.subj)d+=G.R.weakBonus;if(tgt.card.passive?.key==="armor10")d=Math.max(0,d-10);return d;}
 const inExam=G=>!!G.R.examTurn&&G.turn>=G.R.examTurn;
-function baseDamage(G,pi,a,atk,roll){
+function baseDamage(G,pi,a,atk,roll,afterSpend=false){
   const me=G.players[pi],op=G.players[1-pi];const fx=atk.fx||[];const has=t=>fx.find(f=>f.t===t);let f;
-  let d=atk.dmg||0;
+  let d=atk.dmg||0,extra=0;
+  if((f=has("vsDamaged"))&&op.active&&op.active.dmg>0) d+=f.n;
+  if((f=has("lowHp"))&&hpLeft(a)<=40) extra+=f.n;
+  if(f=has("perOwnEnergy")) d+=f.n*Math.max(0,a.energy-(afterSpend||has("noSpend")?0:atk.cost));
+  if(d>0&&inPlay(me).some(o=>o!==a&&o.card.passive?.key==="aura"&&o.card.subj===a.card.subj)) d+=G.R.auraBonus;
   if(atk.dice) d=roll==null?30:(roll<=2?10:roll<=4?30:50);
-  if(f=has("perOppEnergy")) d+=f.n*(op.active?op.active.energy:0);
+  if(f=has("perOppEnergy")) extra+=f.n*(op.active?op.active.energy:0);
   if(f=has("perKO")) d+=f.n*(me.discard.length+op.discard.length);
   if((f=has("hpCompare"))&&op.active&&hpLeft(op.active)>hpLeft(a)) d+=f.n;
   if(f=has("perOwnBench")) d+=f.n*me.bench.length;
-  d=Math.min(d,G.R.maxDmg);
+  const cap=G.R.capByCost?(G.R.capByCost[Math.min(atk.cost,G.R.capByCost.length-1)]+(a.card.legend?G.R.legendBonusCap:0)):(a.card.legend?G.R.maxDmgLegend:G.R.maxDmg);
+  if(has("breakCap")) d=Math.min(d,cap)+extra; else d=Math.min(d+extra,cap);
   if(inExam(G)&&d>0) d+=G.R.examBonus;
   return d;
 }
@@ -1061,6 +1200,8 @@ function knockOut(G,pi,i){
   if(i.card.passive?.key==="backup"&&p.bench.length&&i.energy){
     const t=p.bench.slice().sort((a,b)=>needScore(b)-needScore(a))[0];t.energy+=i.energy;log(G,`${i.card.passive.name}: ${i.energy} Energie wandert zu ${t.card.name}.`,pi);
   } else { G.stats.lostOnKO+=i.energy; }
+  const vc=inPlay(p).find(x=>x.card.passive?.key==="vice");
+  if(vc){heal(G,pi,vc,30);vc.energy+=1;G.stats.helperKaffee++;log(G,`${vc.card.name} (${vc.card.passive.name}): +1 Energie.`,pi);}
   const tr=inPlay(p).find(x=>x.card.passive?.key==="comfort");
   if(tr){tr.energy+=1;G.stats.helperKaffee++;G.stats.comfort++;log(G,`${tr.card.name} (${tr.card.passive.name}): +1 Energie.`,pi);}
   i.energy=0; p.discard.push(i); G.stats.kos++; if(G.stats.firstKOTurn==null)G.stats.firstKOTurn=G.turn;
@@ -1081,7 +1222,7 @@ async function promotions(G){
       render(G);
       const t=await choose(G,pi,"Deine aktive Lehrkraft hat Feierabend. Wer kommt nach vorn?",pool.map(i=>({inst:i,score:hpLeft(i)+i.energy*20})));
       const src=fromHand?p.hand:p.bench; src.splice(src.indexOf(t),1); p.active=t; log(G,`${t.card.name} kommt nach vorn.`,pi);
-      if(G.R.trostKaffee){t.energy+=G.R.trostKaffee;log(G,`Trost-Kaffee: ${t.card.name} bekommt ${G.R.trostKaffee} Kaffee.`,pi);}
+      if(G.R.trostKaffee){t.energy+=G.R.trostKaffee;log(G,`Trost-Energie: ${t.card.name} bekommt ${G.R.trostKaffee} Energie.`,pi);}
       if(fromHand) await onPlay(G,pi,t);
     }
   }
@@ -1128,6 +1269,7 @@ async function startTurn(G){
   G.stats.benchThisTurn=0; G.benchLeft=G.R.benchPerTurn??99;
   if(G.R.firstTurnBench&&(G.turn===1||(G.turn===2&&!G.R.firstTurnBenchStarterOnly))) G.benchLeft=G.R.firstTurnBench;
   if(p.hand.length>G.stats.maxHand) G.stats.maxHand=p.hand.length;
+  p.bench.forEach(i=>{if(i.card.passive?.key==="interest"&&i.energy<2){i.energy++;log(G,`${i.card.name} (${i.card.passive.name}): +1 Energie.`,G.cur);}});
   inPlay(p).forEach(i=>{if(i.card.passive?.key==="regen10"&&i.dmg>0){const h=Math.min(10,i.dmg);i.dmg-=h;log(G,`${i.card.name} heilt ${h} (${i.card.passive.name}).`,G.cur);}});
   if(!isHuman(G,G.cur)){G.busy=true;render(G);await aiTurn(G);}
   else {G.busy=false;render(G);}
@@ -1136,9 +1278,9 @@ async function endTurn(G){
   if(G.over) return;
   const p=G.players[G.cur];
   const g=p.bench.find(i=>i.card.passive?.key==="benchHeal");
-  if(g&&p.active&&p.active.dmg>0){const h=Math.min(10,p.active.dmg);p.active.dmg-=h;log(G,`${g.card.name} heilt ${p.active.card.name} um ${h} (Seelsorge).`,G.cur);}
+  if(g&&p.active&&p.active.dmg>0){const h=Math.min(10,p.active.dmg);p.active.dmg-=h;log(G,`${g.card.name} heilt ${p.active.card.name} um ${h} (${g.card.passive.name}).`,G.cur);}
   if(G.R.perks&&p.zweig==="GES"&&p.active&&p.active.dmg>0&&p.active.card.subj==="GES"){const h=Math.min(G.R.healPerk,p.active.dmg);p.active.dmg-=h;G.stats.perkHeal+=h;log(G,`Fürsorge (Sozialwesen): ${p.active.card.name} heilt ${h}.`,G.cur);}
-  G.noRetreat[G.cur]=false;
+  G.noRetreat[G.cur]=false; if(G.lockAtk) G.lockAtk[G.cur]=false;
   if(G.turn>=G.R.maxTurns){gameOver(G,-1,"Zeit abgelaufen: unentschieden.");return;}
   G.turn++; G.cur=1-G.cur; G.busy=true;
   render(G); await sleep(G,250);
@@ -1148,7 +1290,7 @@ async function endTurn(G){
 async function doAttack(G,pi,k){
   const me=G.players[pi],op=G.players[1-pi],a=me.active,atk=a.card.atks[k];
   G.busy=true;G.sel=null;
-  spendKaffee(G,a,atk.cost);
+  const fx0=atk.fx||[]; if(!fx0.some(f=>f.t==="noSpend")) spendKaffee(G,a,atk.cost);
   G.stats.attacks++; if(k===strongIdx(a)) G.stats.strong++;
   log(G,`${a.card.name} setzt „${atk.name}“ ein (${atk.cost} Energie verbraucht).`,pi); render(G); await sleep(G,350);
   const fx=atk.fx||[]; const has=t=>fx.find(f=>f.t===t); let f; const track=[];
@@ -1158,11 +1300,14 @@ async function doAttack(G,pi,k){
   }
   let r=null;
   if(atk.dice){r=1+Math.floor(G.rng()*6);}
-  const dmg=baseDamage(G,pi,a,atk,r);
+  const dmg=baseDamage(G,pi,a,atk,r,true);
   if(atk.dice) log(G,`Gewürfelt: ${r}, also ${dmg} Schaden.`,pi);
   let target=op.active;
   if(has("snipe")) target=await choose(G,pi,`${atk.name}: Wen triffst du?`,inPlay(op).map(i=>({inst:i,score:(calcDmg(G,a,i,dmg)>=hpLeft(i)?1000+i.energy*20:0)-hpLeft(i)+(i===op.active?5:0)})));
   if(dmg>0&&target) dealDamage(G,pi,a,target,dmg,true,track);
+  if(has("twice")&&dmg>0&&target&&target.dmg<target.card.hp){const cap=G.R.capByCost[Math.min(atk.cost,G.R.capByCost.length-1)];dealDamage(G,pi,a,target,Math.max(0,Math.min(atk.dmg,cap-dmg+(inExam(G)?G.R.examBonus:0))),false,track);}
+  if((f=has("splashOne"))&&op.bench.length){const t=await choose(G,pi,`${atk.name}: Welche Lehrkraft auf der Bank triffst du zusätzlich?`,op.bench.map(i=>({inst:i,score:(f.n>=hpLeft(i)?1000+i.energy*20:0)-hpLeft(i)})));if(t)dealDamage(G,pi,a,t,f.n,false,track);}
+  if((f=has("steal"))&&op.active&&op.active.energy){op.active.energy--;a.energy++;log(G,`${a.card.name} nimmt ${op.active.card.name} 1 Energie weg.`,pi);}
   if(f=has("benchSplash")) op.bench.forEach(i=>dealDamage(G,pi,a,i,f.n,false,track));
   if(f=has("selfDmg")){a.dmg+=f.n;G.flash.add(a.uid);log(G,`${a.card.name} erhält ${f.n} Schaden durch den Rückstoß.`,pi);}
   if(f=has("healSelf")) heal(G,pi,a,f.n);
@@ -1171,7 +1316,8 @@ async function doAttack(G,pi,k){
   if(f=has("draw")){if(draw(me,f.n))log(G,`${who(G,pi)}: +${f.n} Karte.`,pi);}
   if(f=has("attachSelf")) addKaffee(G,pi,a,f.n,"helper");
   if((f=has("attachBench"))&&me.bench.length){const t=await choose(G,pi,`${atk.name}: Welche Lehrkraft auf deiner Bank bekommt 1 Energie?`,me.bench.map(i=>({inst:i,score:needScore(i)})));addKaffee(G,pi,t,f.n,"helper");}
-  if(f=has("attachAny")){const t=await choose(G,pi,`${atk.name}: Welche Lehrkraft bekommt 2 Energie?`,inPlay(me).map(i=>({inst:i,score:needScore(i)})));addKaffee(G,pi,t,f.n,"helper");}
+  if(f=has("attachAny")){const t=await choose(G,pi,`${atk.name}: Welche Lehrkraft bekommt ${f.n} Energie?`,inPlay(me).map(i=>({inst:i,score:needScore(i)})));addKaffee(G,pi,t,f.n,"helper");}
+  if(has("lockAtk")){G.lockAtk=G.lockAtk||[false,false];G.lockAtk[1-pi]=true;log(G,"Der Gegner kann im nächsten Zug keine Attacke ab 2 Energie einsetzen.",pi);}
   if(has("noRetreat")){G.noRetreat[1-pi]=true;log(G,"Der Gegner darf seine aktive Lehrkraft nächsten Zug nicht auswechseln.",pi);}
   if((f=has("strip"))&&op.active&&op.active.energy){const n=Math.min(f.n,op.active.energy);op.active.energy-=n;log(G,`${op.active.card.name} verliert ${n} Energie.`,pi);}
   const front=op.active;
@@ -1242,7 +1388,7 @@ function aiValue(G,pi,a,atk){
   const fx=atk.fx||[]; const has=t=>fx.find(f=>f.t===t); let f;
   const d=baseDamage(G,pi,a,atk,null);
   let v=0,kills=false;
-  const hit=i=>{const x=calcDmg(G,a,i,d);const k=d>0&&x>=hpLeft(i);return {x:x+(k?60:0),k};};
+  const hit=i=>{const x=calcDmg(G,a,i,d)+(has("twice")?calcDmg(G,a,i,Math.max(0,Math.min(atk.dmg,G.R.capByCost[Math.min(atk.cost,4)]-d)),false):0);const k=d>0&&x>=hpLeft(i);return {x:x+(k?60:0),k};};
   let pool=[op.active];
   if(has("snipe")||(has("gust")&&op.bench.length)) pool=inPlay(op);
   if(op.active){const best=pool.filter(Boolean).map(hit).sort((x,y)=>y.x-x.x)[0];v=best.x;kills=best.k;}
@@ -1256,6 +1402,10 @@ function aiValue(G,pi,a,atk){
   if(f=has("attachSelf")||has("attachAny")) v+=14*f.n;
   if((f=has("attachBench"))&&me.bench.length) v+=14*f.n;
   if(has("noRetreat")||has("forceSwitch")) v+=4;
+  if(has("lockAtk")&&op.active&&op.active.card.atks.some(x=>x.cost>=2)) v+=8;
+  if((f=has("splashOne"))&&op.bench.length) v+=f.n*.9+(op.bench.some(i=>hpLeft(i)<=f.n)?50:0);
+  if(has("steal")&&op.active&&op.active.energy) v+=24;
+  if(has("noSpend")) v+=12;
   return {v,kills};
 }
 function aiPickAttack(G,pi){
@@ -1321,7 +1471,7 @@ async function aiTurn(G){
   await endTurn(G);
 }
 
-return {isHuman,RECOMMENDED_Z,RECOMMENDED_Z_SUPPORTS,ZWEIGE,ZWEIG_KEYS,zweigOf,mainZweig,deckProblems,canJoker,playJoker,aiJokerScore,scorchTargets,hero,canBench,ENERGIES,BEAT_REASON,TEMPLATES,SUPPORTS,supById,RECOMMENDED_SUPPORTS,isTeacher,teachersIn,canPlaySupport,playSupport,SUBJ,BEATS,WEAKTO,RULES,CARDS,RECOMMENDED,byId,shuffle,randomDeck,hpLeft,strongCost,inPlay,
+return {KITS,ROLES,fromTemplate,isHuman,RECOMMENDED_Z,RECOMMENDED_Z_SUPPORTS,ZWEIGE,ZWEIG_KEYS,zweigOf,mainZweig,deckProblems,canJoker,playJoker,aiJokerScore,scorchTargets,hero,canBench,ENERGIES,BEAT_REASON,TEMPLATES,SUPPORTS,supById,RECOMMENDED_SUPPORTS,isTeacher,teachersIn,canPlaySupport,playSupport,SUBJ,BEATS,WEAKTO,RULES,CARDS,RECOMMENDED,byId,shuffle,randomDeck,hpLeft,strongCost,inPlay,
   createGame,startGame,endTurn,doAttack,attach,canAttach,benchFromHand,canRetreat,retreatCost,doRetreat,canAttack,
   baseDamage,calcDmg,log,inExam,aiPickAttack,aiValue};
 })();
@@ -1420,7 +1570,7 @@ const ini=n=>{const w=n.replace(/^Dr\.\s*/,"").split(" ");return (w[0][0]+(w[w.l
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=id=>document.getElementById(id);
 const run=p=>p.catch(e=>{if(e!=="abort"&&e!=="resigned") console.error(e);});
-const cups=n=>Array.from({length:n},()=>`<i class="cup">${BOLT}</i>`).join("");
+const cups=n=>n?Array.from({length:n},()=>`<i class="cup">${BOLT}</i>`).join(""):`<i class="cup free">frei</i>`;
 
 /* ---------- Perspektive ---------- */
 function adj(m){return [m[4]*m[8]-m[5]*m[7],m[2]*m[7]-m[1]*m[8],m[1]*m[5]-m[2]*m[4],m[5]*m[6]-m[3]*m[8],m[0]*m[8]-m[2]*m[6],m[2]*m[3]-m[0]*m[5],m[3]*m[7]-m[4]*m[6],m[1]*m[6]-m[0]*m[7],m[0]*m[4]-m[1]*m[3]];}
@@ -1559,9 +1709,11 @@ function fullHTML(i,o={}){
   if(i.sup){const x=i.sup;return `<div class="card full sup" style="--c:var(--sup)"><div class="in"><div class="top"><span class="nm">${esc(x.name)}</span></div><div class="fach">${x.gwent?`Sonderkarte · Idee aus Gwent: ${esc(x.gwent)}`:"Unterstützungskarte"}</div><div class="art">${esc(x.name[0])}</div><div class="txt">${esc(x.text)}</div></div></div>`;}
   const c=i.card,left=hpLeft(i);
   const strong=BEATS[c.subj]?SUBJ[BEATS[c.subj]].label:"–",weak=WEAKTO[c.subj]?SUBJ[WEAKTO[c.subj]].label:"–";
-  return `<div class="card full${o.shiny?" shiny":""}" style="--c:var(${subjVar(c)})"><div class="in">
-   <div class="top"><span class="nm">${esc(c.name)}</span><span class="hp">${left}<small>/${c.hp} KP</small></span></div>
-   <div class="fach">${o.shiny?"✦ Shiny · ":""}${esc(SUBJ[c.subj].label)} · ${esc(c.fach)}${c.legend?" · Schulleitung":""}</div>
+  // Viel Text (Fähigkeit + zwei Effekte): kleineres Bildfeld, damit alles auf die Karte passt
+  const tl=(c.passive?c.passive.text.length+40:0)+c.atks.reduce((n,a)=>n+(a.text||"").length+(a.name.length>18?30:0),0)+c.fach.length;
+  return `<div class="card full${o.shiny?" shiny":""}${tl>150?" dense":""}" style="--c:var(${subjVar(c)})"><div class="in">
+   <div class="top"><span class="nm${c.name.split(" ").some(w=>w.length>12)?" long":""}">${esc(c.name)}</span><span class="hp">${left}<small>/${c.hp} KP</small></span></div>
+   <div class="fach">${o.shiny?"✦ Shiny · ":""}${esc([...new Set([SUBJ[c.subj].label,...c.fach.split(" · "),...(c.legend?["Schulleitung"]:[])])].join(" · "))}</div>
    <div class="art">${ini(c.name)}</div>
    ${c.passive?`<div class="pass"><b>${esc(c.passive.name)}</b>${esc(c.passive.text)}</div>`:"<div></div>"}
    <div class="atks">${c.atks.map(a=>`<div class="ar"><span class="cups">${cups(a.cost)}</span><span><b>${esc(a.name)}</b>${a.text?`<span class="t">${esc(a.text)}</span>`:""}</span><span class="d">${a.label??(a.dmg||"–")}</span></div>`).join("")}</div>
@@ -1866,6 +2018,8 @@ return {startAI,startOnline,layout,fullHTML,active:()=>!!G,setOppAway:v=>{if(C){
 /* Lehrerzimmer Arena – Menü, Profil (Sammlung, Decks, Packs), Album und Online-Lobby */
 
 /* ---------- Profil: privat pro Person in db, sonst im Browser ---------- */
+// Kartenversion: steigt, wenn sich Kartenwerte so ändern, dass alte Profile und Online-Partien nicht mehr passen
+const CARD_VER=3;
 const Profile=(()=>{
   let LS="lza-profil-v1";
   let data=null,doc=null,writing=false,again=false;
@@ -1874,11 +2028,23 @@ const Profile=(()=>{
   function base(zweig="MINT"){
     const t={};RECOMMENDED_Z[zweig].forEach(id=>t[id]=1);
     const sup={};RECOMMENDED_Z_SUPPORTS.forEach(id=>sup[id]=(sup[id]||0)+1);
-    return {v:2,zweig,coll:{t,s:{},sup,e:{kaffee:1}},
+    return {v:2,kv:CARD_VER,zweig,coll:{t,s:{},sup,e:{kaffee:1}},
       decks:[{id:"start-"+zweig,name:"Startdeck "+ZWEIGE[zweig].name.split(" ")[0],zweig,ids:RECOMMENDED_Z[zweig].concat(RECOMMENDED_Z_SUPPORTS),start:true}],
       active:"start-"+zweig,packs:{day:"",free:0,bonus:1,opened:0},stats:{w:0,l:0,ow:0,ol:0},best:[],cur:null};
   }
-  function fix(d){const b=base(d&&d.zweig||"MINT");d=Object.assign(b,d||{});d.coll=Object.assign(b.coll,d.coll||{});["t","s","sup","e"].forEach(k=>d.coll[k]=d.coll[k]||{});d.packs=Object.assign(base().packs,d.packs||{});d.stats=Object.assign(base().stats,d.stats||{});if(!Array.isArray(d.decks)||!d.decks.length)d.decks=b.decks;return d;}
+  function fix(d){const old=d&&d.kv!==CARD_VER&&d.coll;const b=base(d&&d.zweig||"MINT");d=Object.assign(b,d||{});d.coll=Object.assign(b.coll,d.coll||{});["t","s","sup","e"].forEach(k=>d.coll[k]=d.coll[k]||{});d.packs=Object.assign(base().packs,d.packs||{});d.stats=Object.assign(base().stats,d.stats||{});if(!Array.isArray(d.decks)||!d.decks.length)d.decks=b.decks;if(old)migrate(d);return d;}
+  // Umstellung auf die neuen Karten (Kartenversion 3): Startdecks erneuern und ihre Karten schenken, eigene Decks auf den passenden Zweig setzen
+  function migrate(d){
+    const give=z=>RECOMMENDED_Z[z].forEach(id=>{if(!d.coll.t[id])d.coll.t[id]=1;});
+    if(ZWEIGE[d.zweig]) give(d.zweig);
+    d.decks.forEach(k=>{
+      if(k.start&&ZWEIGE[k.zweig]){give(k.zweig);k.ids=RECOMMENDED_Z[k.zweig].concat(RECOMMENDED_Z_SUPPORTS);return;}
+      const t=k.ids.filter(byId),mz=E.mainZweig(t);
+      if(E.deckProblems(k.ids,k.zweig).some(x=>/Mindestens/.test(x))&&mz&&!E.deckProblems(k.ids,mz).some(x=>/Mindestens/.test(x)))k.zweig=mz;
+    });
+    d.cur=null;d.kv=CARD_VER;migrated=true;
+  }
+  let migrated=false;
   // liefert null, wenn es für diese Person noch kein Profil gibt (dann Zweig wählen)
   async function init(db,uid){
     LS="lza-profil-v2-"+(uid||"lokal");doc=null;
@@ -1887,7 +2053,7 @@ const Profile=(()=>{
       try{doc=db.collection("data/users/"+uid).doc("profil");const s=await doc.get();
         if(s.exists) data=fix(JSON.parse(JSON.stringify(s.data()))); else if(data) await doc.set(data);}catch(e){doc=null;}
     }
-    if(data) daily(); return data;
+    if(data){daily();if(migrated){migrated=false;save();}} return data;
   }
   function create(zweig){data=base(zweig);daily();save();return data;}
   function daily(){if(data.packs.day!==today()){data.packs.day=today();data.packs.free=2;save();}}
@@ -2107,7 +2273,7 @@ const Menu=(()=>{
   }
   function vRules(){
     const zt=ZWEIG_KEYS.map(z=>{const Z=ZWEIGE[z];return `<div class="zr" style="--c:${zc(z)}"><b>${esc(Z.name)}</b><p><i>${esc(Z.perk.name)}</i> ${esc(Z.perk.text)}</p><p><i>Joker ${esc(Z.joker.name)}</i> ${esc(Z.joker.text)}</p></div>`;}).join("");
-    const cyc=["MINT","GES","WIR","FS","DEU","MINT"].map(k=>`<span class="s" style="--c:var(${SUBJ[k].v})">${SUBJ[k].label}</span>`).join('<span class="ar">→</span>');
+    const cyc=["MINT","GES","WIR","FS","MINT"].map(k=>`<span class="s" style="--c:var(${SUBJ[k].v})">${SUBJ[k].label}</span>`).join('<span class="ar">→</span>');
     return `<section class="panel rules3"><h2>So geht's</h2>
       <ol class="steps big"><li><i>1</i><b>Ziel</b><span>Schicke 3 gegnerische Lehrkräfte in den Feierabend. Jeder Feierabend bringt 5 Punkte, wer zuerst 15 hat, gewinnt.</span></li>
         <li><i>2</i><b>Vorbereiten</b><span>Ziehe 1 Karte. Dann beliebig: 1 Lehrkraft auf die Bank, 1 Unterstützungskarte (Wirtschaft: 2), 1 Energie anlegen, 1× Rückzug, Joker (1× pro Spiel).</span></li>
@@ -2115,7 +2281,7 @@ const Menu=(()=>{
       <p class="mini">Der Startspieler darf im ersten Zug weder angreifen noch Unterstützer oder Joker spielen.</p>
       <h3>Schwächen</h3><p class="cyc">${cyc}</p><p>Gegen die Gruppe rechts daneben macht eine Lehrkraft +${RULES.weakBonus} Schaden.</p>
       <h3>Die 4 Zweige</h3><div class="zrules">${zt}</div>
-      <details class="more"><summary>Besondere Regeln</summary><ul><li><b>Neue Hand:</b> Zu Beginn darfst du einmal deine ganze Starthand abwerfen und komplett neu ziehen.</li><li><b>Heldenkarte:</b> Gegnerische Unterstützer und Joker wirken nicht auf die Schulleitung.</li><li><b>Sonderkarten:</b> ${SUPPORTS.filter(s=>s.gwent).map(s=>esc(s.name)).join(", ")}.</li></ul></details>
+      <details class="more"><summary>Besondere Regeln</summary><ul><li><b>Neue Hand:</b> Zu Beginn darfst du einmal deine ganze Starthand abwerfen und komplett neu ziehen.</li><li><b>Startenergie:</b> Deine erste aktive Lehrkraft beginnt mit 1 Energie.</li><li><b>Trost-Energie:</b> Hat deine aktive Lehrkraft Feierabend, bekommt die nachrückende Lehrkraft 1 Energie.</li><li><b>Aufholjagd:</b> Liegst du nach Punkten hinten, darfst du in deinem Zug 1 Unterstützungskarte mehr spielen.</li><li><b>Heldenkarte:</b> Gegnerische Unterstützer und Joker wirken nicht auf die Schulleitung.</li><li><b>Sonderkarten:</b> ${SUPPORTS.filter(s=>s.gwent).map(s=>esc(s.name)).join(", ")}.</li></ul></details>
       <details class="more"><summary>Online spielen</summary>${window.LZ_SITE?`<p>Schick den Link dieser Seite an deine Mitspielerinnen und Mitspieler. Wer eine Herausforderung erstellt, wartet unter „Spielen“. Die anderen sehen sie dort und treten bei.</p>`:`<p>Mitspielerinnen und Mitspieler brauchen einen claude.ai-Zugang zu dieser Seite. Lade sie über „Teilen“ per E-Mail mit dem Recht <b>Bearbeiten</b> ein (ohne öffentlichen Link). Dann sehen sie deine Herausforderung unter „Spielen“. Bitte die Echtnamen nur mit Einverständnis der Lehrkräfte teilen.</p>`}</details>
       <p><a href="https://claude.ai/artifact/JnYEqSzdzPNuHWdzYJpfen#regeln" target="_blank" rel="noopener">Ausführliche Regeln und Spieltest-Zahlen</a></p></section>`;
   }
@@ -2203,7 +2369,7 @@ const Online=(()=>{
     db.collection("matches").doc(l.id).delete().catch(()=>{}).then(()=>db.collection("lobby").doc(l.id).delete()).catch(()=>{});});}
   const nameOf=id=>id===myId?(myNameStr||"Du"):(names[id]||"Mitspieler");
   // Auf der Webseite zählen fremde Herausforderungen nur, solange der Ersteller noch online ist
-  const open=()=>lobby.filter(l=>l.st==="open"&&Date.now()-(l.t||0)<T_OPEN&&(!here||l.host===myId||here.has(l.host)));
+  const open=()=>lobby.filter(l=>l.st==="open"&&l.kv===CARD_VER&&Date.now()-(l.t||0)<T_OPEN&&(!here||l.host===myId||here.has(l.host)));
   function status(){return !ready?"nicht verfügbar":`${peers||1} online · ${open().filter(l=>l.host!==myId).length} offene Herausforderungen`;}
   function panelHTML(deckBad){
     const head=`<span class="mico">${ico("online")}</span><h2>Online${ready?` <span class="pill live">${peers||1} online</span>`:""}</h2>`;
@@ -2226,7 +2392,7 @@ const Online=(()=>{
   }
   async function challenge(deck){
     busy=true;msg="";Menu.refreshOnline();
-    try{const mid=rid();await db.collection("lobby").doc(mid).set({mid,host:myId,hz:deck.zweig,hd:deck.ids,st:"open",t:Date.now(),seed:Math.floor(Math.random()*2e9)});waiting=mid;}
+    try{const mid=rid();await db.collection("lobby").doc(mid).set({mid,host:myId,hz:deck.zweig,hd:deck.ids,st:"open",t:Date.now(),seed:Math.floor(Math.random()*2e9),kv:CARD_VER});waiting=mid;}
     catch(e){msg="Die Herausforderung konnte nicht gespeichert werden. Hast du Bearbeitungsrecht für diese Seite?";}
     busy=false;Menu.refreshOnline();
   }
